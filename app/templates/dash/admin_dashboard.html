@@ -66,14 +66,77 @@
         params: { status: ["SUBMITTED", "ADMIN_REVIEW", "READY_FOR_PRODUCTION"] },
         emptyMessage: "Tidak ada request yang menunggu tindakan admin.",
         renderRow: function (item) {
-            return "<tr>" +
-                '<td><a href="/requests/' + item.id + '">' + App.esc(item.request_code) + "</a></td>" +
+            return '<tr class="row-clickable" data-id="' + item.id + '" tabindex="0">' +
+                '<td><a href="/requests/' + item.id + '" onclick="event.stopPropagation()">' + App.esc(item.request_code) + "</a></td>" +
                 "<td>" + App.esc(item.title) + "</td>" +
                 "<td>" + App.esc(App.dash(item.owner)) + "</td>" +
                 "<td>" + App.statusBadge(item.status) + "</td>" +
                 '<td class="nowrap small">' + App.esc(App.dash(item.submitted_at || item.created_at)) + "</td></tr>";
         }
     });
+
+    var pendingBody = document.getElementById("pending-body");
+    pendingBody.addEventListener("click", function (ev) {
+        var row = ev.target.closest(".row-clickable");
+        if (row) { showRequestPreview(row.dataset.id); }
+    });
+    pendingBody.addEventListener("keydown", function (ev) {
+        if (ev.key !== "Enter") { return; }
+        var row = ev.target.closest(".row-clickable");
+        if (row) { showRequestPreview(row.dataset.id); }
+    });
+
+    function showRequestPreview(id) {
+        var dialog = App.modal({
+            title: "Detail Request",
+            large: true,
+            content: '<div class="loading-state"><span class="spinner"></span>Loading...</div>',
+            buttons: [
+                { label: "Tutup", class: "btn-outline" },
+                { label: "Buka Halaman Detail", class: "btn",
+                  onClick: function () { window.location.href = "/requests/" + id; } }
+            ]
+        });
+        App.api.get("/api/admin/requests/" + id).then(function (res) {
+            var r = res.data.request;
+            var html = '<h4>Informasi</h4><dl class="kv">' +
+                "<dt>Kode</dt><dd>" + App.esc(r.request_code) + "</dd>" +
+                "<dt>Judul</dt><dd>" + App.esc(r.title) + "</dd>" +
+                "<dt>Status</dt><dd>" + App.statusBadge(r.status) + "</dd>" +
+                "<dt>User</dt><dd>" + App.esc(App.dash(r.owner)) +
+                    (r.owner_email ? ' <span class="small muted">(' + App.esc(r.owner_email) + ")</span>" : "") + "</dd>" +
+                "<dt>Jenis Buku</dt><dd>" + App.esc(App.dash(r.book_type)) + "</dd>" +
+                "<dt>Jumlah Anggota</dt><dd>" + App.esc(App.dash(r.member_count)) + "</dd>" +
+                "<dt>Deadline</dt><dd>" + App.esc(App.dash(r.deadline)) + "</dd>" +
+                "<dt>Ukuran / Kertas</dt><dd>" + App.esc(App.dash(r.book_size)) + " / " + App.esc(App.dash(r.paper_type)) + "</dd>" +
+                "<dt>Jumlah Cetak</dt><dd>" + App.esc(App.dash(r.print_quantity)) + "</dd>" +
+                "<dt>Diajukan</dt><dd>" + App.esc(App.dash(r.submitted_at || r.created_at)) + "</dd>" +
+                "<dt>Deskripsi</dt><dd>" + App.esc(App.dash(r.description)) + "</dd>" +
+                "</dl>";
+
+            html += "<h4>Riwayat Status</h4>";
+            var history = r.history || [];
+            if (!history.length) {
+                html += '<div class="empty-state small">Belum ada riwayat.</div>';
+            } else {
+                html += '<ul class="timeline">' + history.map(function (h) {
+                    return "<li>" +
+                        '<div class="tl-time">' + App.esc(h.created_at) + "</div>" +
+                        '<div class="tl-title">' +
+                        (h.old_status ? App.statusLabel(h.old_status) + " &rarr; " : "") +
+                        App.statusLabel(h.new_status) + "</div>" +
+                        '<div class="small muted">' + App.esc(h.actor) +
+                        (h.actor_role ? " (" + App.esc(h.actor_role) + ")" : "") + "</div>" +
+                        (h.note ? '<div class="tl-note">' + App.esc(h.note) + "</div>" : "") +
+                        "</li>";
+                }).join("") + "</ul>";
+            }
+            dialog.root.querySelector(".modal-body").innerHTML = html;
+        }).catch(function (err) {
+            dialog.root.querySelector(".modal-body").innerHTML =
+                '<div class="empty-state">' + App.esc(err.message || "Detail gagal dimuat.") + "</div>";
+        });
+    }
 
     var activity = document.getElementById("activity");
     App.api.get("/api/admin/audit-logs?per_page=10").then(function (res) {

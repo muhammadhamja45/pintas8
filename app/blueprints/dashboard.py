@@ -96,7 +96,7 @@ def admin_audit_log():
 # EDITOR
 # --------------------------------------------------------------------------
 @bp.get("/editor/dashboard")
-@role_required("EDITOR")
+@role_required("EDITOR", "ADMIN")
 def editor_dashboard():
     return page("dash/editor_dashboard.html", "Dashboard", "dashboard")
 
@@ -110,7 +110,7 @@ EDITOR_QUEUES = {
 
 
 @bp.get("/editor/<queue>")
-@role_required("EDITOR")
+@role_required("EDITOR", "ADMIN")
 def editor_queue(queue):
     if queue not in EDITOR_QUEUES:
         abort(404, description="Halaman tidak ditemukan.")

@@ -23,7 +23,7 @@ def get_request_or_404(request_id):
 
 
 @bp.get("/requests")
-@role_required("EDITOR")
+@role_required("EDITOR", "ADMIN")
 def list_requests():
     args = request.args
     statuses = args.getlist("status") or EDITOR_STATUSES
@@ -42,13 +42,13 @@ def list_requests():
 
 
 @bp.get("/requests/<int:request_id>")
-@role_required("EDITOR")
+@role_required("EDITOR", "ADMIN")
 def get_request(request_id):
     return ok("OK", {"request": get_request_or_404(request_id).to_dict(detail=True)})
 
 
 @bp.post("/requests/<int:request_id>/review")
-@role_required("EDITOR")
+@role_required("EDITOR", "ADMIN")
 def save_review(request_id):
     """Persist the editor checklist. Creates it on first save."""
     book_request = get_request_or_404(request_id)
@@ -80,7 +80,7 @@ def save_review(request_id):
 
 
 @bp.post("/requests/<int:request_id>/return")
-@role_required("EDITOR")
+@role_required("EDITOR", "ADMIN")
 def return_for_revision(request_id):
     """EDITOR_REVIEW -> REVISION_REQUIRED. Note is mandatory and kept as history."""
     book_request = get_request_or_404(request_id)
@@ -113,7 +113,7 @@ def return_for_revision(request_id):
 
 
 @bp.post("/requests/<int:request_id>/approve")
-@role_required("EDITOR")
+@role_required("EDITOR", "ADMIN")
 def approve(request_id):
     """EDITOR_REVIEW -> EDITOR_APPROVED -> READY_FOR_PRODUCTION.
 

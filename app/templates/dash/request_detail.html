@@ -29,7 +29,7 @@
             <button class="btn btn-danger" id="btn-reject">Reject</button>
         {% elif role == 'ADMIN' and req.status == 'READY_FOR_PRODUCTION' %}
             <button class="btn btn-success" id="btn-send-production">Kirim ke Produksi</button>
-        {% elif role == 'EDITOR' and req.status == 'EDITOR_REVIEW' %}
+        {% elif role in ['EDITOR', 'ADMIN'] and req.status == 'EDITOR_REVIEW' %}
             <button class="btn btn-outline" id="btn-save-checklist">Simpan Checklist</button>
             <button class="btn btn-warning" id="btn-editor-return">Return ke User</button>
             <button class="btn btn-success" id="btn-editor-approve">Approve &amp; Ready for Production</button>
@@ -42,6 +42,51 @@
 
 <div class="detail-grid">
     <div>
+        <!-- book preview: cover + flipbook + public visibility -->
+        <div class="card book-preview">
+            <div class="card-head"><h2>Preview Buku</h2></div>
+            <div class="card-body book-preview-body">
+                <div class="cover-box catalog-cover" id="cover-box">
+                    {% if req.cover_file %}
+                    <img src="{{ url_for('api_requests.download_file', file_id=req.cover_file.id) }}" alt="{{ req.title }}">
+                    {% else %}
+                    <div class="thumb">&#128216;</div>
+                    {% endif %}
+                </div>
+                <div class="book-preview-info">
+                    <h3>{{ req.title }}</h3>
+                    <p class="small muted">{{ req.book_type.name }} &middot; {{ req.owner.full_name }}</p>
+
+                    {% if req.pdf_file %}
+                    <button class="btn btn-outline btn-sm" data-flip-file="{{ req.pdf_file.id }}" data-flip-title="{{ req.title }}">Baca Flipbook</button>
+                    {% else %}
+                    <p class="small muted">Belum ada PDF isi buku diunggah.</p>
+                    {% endif %}
+
+                    {% if is_owner and editable %}
+                    <div class="cover-drop" id="cover-drop">
+                        <input type="file" id="cover-input" accept="image/*" hidden>
+                        <p>Klik atau tarik foto sampul ke sini</p>
+                        <p class="small muted">JPG, PNG, atau WEBP. Maks 50 MB.</p>
+                    </div>
+                    {% endif %}
+
+                    {% if is_owner %}
+                    <label class="check-row mt-2">
+                        <input type="checkbox" id="chk-public" {% if req.is_public %}checked{% endif %}
+                               {% if not req.pdf_file or req.status not in PUBLIC_ELIGIBLE_STATUSES %}disabled{% endif %}>
+                        <span>Tampilkan di halaman Home (Public)</span>
+                    </label>
+                    {% if not req.pdf_file %}
+                    <p class="small muted">Upload file PDF isi buku untuk bisa ditampilkan public.</p>
+                    {% elif req.status not in PUBLIC_ELIGIBLE_STATUSES %}
+                    <p class="small muted">Menunggu persetujuan editor sebelum bisa ditampilkan public.</p>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
         <!-- request + book information -->
         <div class="card">
             <div class="card-head"><h2>Request Information</h2></div>
@@ -141,16 +186,6 @@
                 {% endif %}
             </div>
             <div class="card-body">
-                {% if is_owner %}
-                <label class="check-row mb-2">
-                    <input type="checkbox" id="chk-public" {% if req.is_public %}checked{% endif %}
-                           {% if not req.pdf_file %}disabled{% endif %}>
-                    <span>Tampilkan di halaman Home (Public)</span>
-                </label>
-                {% if not req.pdf_file %}
-                <p class="small muted mb-2">Upload file PDF isi buku untuk bisa ditampilkan public.</p>
-                {% endif %}
-                {% endif %}
                 {% if req.files %}
                 <div class="file-grid" id="file-grid">
                     {% for file in req.files %}
@@ -195,7 +230,7 @@
                     <label class="check-row">
                         <input type="checkbox" data-check="{{ field }}"
                                {% if req.checklist and req.checklist[field] %}checked{% endif %}
-                               {% if not (role == 'EDITOR' and req.status == 'EDITOR_REVIEW') %}disabled{% endif %}>
+                               {% if not (role in ['EDITOR', 'ADMIN'] and req.status == 'EDITOR_REVIEW') %}disabled{% endif %}>
                         <span>{{ label }}</span>
                     </label>
                     {% endfor %}
@@ -203,7 +238,7 @@
                 <div class="field mt-3">
                     <label for="checklist-note">Catatan Editor</label>
                     <textarea id="checklist-note" rows="3"
-                        {% if not (role == 'EDITOR' and req.status == 'EDITOR_REVIEW') %}disabled{% endif %}>{{ req.checklist.note if req.checklist else '' }}</textarea>
+                        {% if not (role in ['EDITOR', 'ADMIN'] and req.status == 'EDITOR_REVIEW') %}disabled{% endif %}>{{ req.checklist.note if req.checklist else '' }}</textarea>
                 </div>
             </div>
         </div>
@@ -617,6 +652,31 @@
         });
     }
 
+    var coverDrop = document.getElementById("cover-drop");
+    if (coverDrop) {
+        var coverInput = document.getElementById("cover-input");
+        var doUpload = function (file) {
+            if (!file) { return; }
+            var form = new FormData();
+            form.append("file", file);
+            form.append("category", "COVER");
+            App.busy(coverDrop, App.api.upload("/api/requests/" + REQ_ID + "/files", form)
+                .then(function () { App.toast("Cover berhasil diunggah.", "success"); reload(); })
+                .catch(App.error));
+        };
+        coverDrop.addEventListener("click", function () { coverInput.click(); });
+        coverInput.addEventListener("change", function () { doUpload(coverInput.files[0]); });
+        ["dragover", "dragleave", "drop"].forEach(function (evt) {
+            coverDrop.addEventListener(evt, function (e) {
+                e.preventDefault();
+                coverDrop.classList.toggle("is-drag", evt === "dragover");
+            });
+        });
+        coverDrop.addEventListener("drop", function (e) {
+            doUpload(e.dataTransfer.files[0]);
+        });
+    }
+
     /* ---------------- flipbook ---------------- */
     App.qsa("[data-flip-file]").forEach(function (button) {
         button.addEventListener("click", function () {
@@ -629,8 +689,7 @@
         var isProduction = {{ 'true' if role == 'PRODUCTION' else 'false' }};
         var options = isProduction
             ? '<option value="FINAL">File Final</option>'
-            : '<option value="COVER">Cover</option>' +
-              '<option value="MEMBER_PHOTO">Foto Anggota</option>' +
+            : '<option value="MEMBER_PHOTO">Foto Anggota</option>' +
               '<option value="DOCUMENTATION">Foto Dokumentasi</option>' +
               '<option value="SUPPORT">Foto Pendukung</option>' +
               '<option value="ATTACHMENT">Lampiran</option>';

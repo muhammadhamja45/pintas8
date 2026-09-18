@@ -231,6 +231,29 @@ def test_reject_and_return_require_a_note(app, clients, book_type_id):
     assert status_of(app, request_id) == "ADMIN_REVIEW"
 
 
+def test_admin_can_perform_editor_actions(app, clients, book_type_id):
+    """ADMIN holds every EDITOR permission: review, return, checklist, approve."""
+    user, admin = clients["user"], clients["admin"]
+    request_id = make_request(user, book_type_id, "Buku Admin Sebagai Editor")
+    user.post(f"/api/requests/{request_id}/members", json={"name": "Anggota"})
+    user.post(f"/api/requests/{request_id}/submit")
+    admin.post(f"/api/admin/requests/{request_id}/review")
+    admin.post(f"/api/admin/requests/{request_id}/approve", json={})
+    assert status_of(app, request_id) == "EDITOR_REVIEW"
+
+    assert admin.get(f"/api/editor/requests/{request_id}").status_code == 200
+    assert admin.post(f"/api/editor/requests/{request_id}/return",
+                      json={"note": "Perbaiki sampul."}).status_code == 200
+    assert status_of(app, request_id) == "REVISION_REQUIRED"
+
+    user.post(f"/api/requests/{request_id}/revision",
+             json={"response": "Sudah diperbaiki."})
+    assert admin.post(f"/api/editor/requests/{request_id}/review",
+                      json=full_checklist()).status_code == 200
+    assert admin.post(f"/api/editor/requests/{request_id}/approve").status_code == 200
+    assert status_of(app, request_id) == "READY_FOR_PRODUCTION"
+
+
 def test_notifications_reach_the_next_role(app, clients, book_type_id):
     from app.models import Notification, User
 

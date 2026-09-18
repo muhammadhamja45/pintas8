@@ -25,10 +25,27 @@ def test_toggle_requires_pdf(app, book_type_id):
     assert res.status_code == 422
 
 
+def advance_to_ready_for_production(app, user, request_id):
+    from app.models import CHECKLIST_FIELDS
+    admin = client_for(app, "admin@example.com")
+    editor = client_for(app, "editor@example.com")
+    user.post(f"/api/requests/{request_id}/members", json={"name": "Anggota Satu"})
+    assert user.post(f"/api/requests/{request_id}/submit").status_code == 200
+    assert admin.post(f"/api/admin/requests/{request_id}/review").status_code == 200
+    assert admin.post(f"/api/admin/requests/{request_id}/approve",
+                      json={"note": "Lengkap"}).status_code == 200
+    checklist = {field: True for field, _ in CHECKLIST_FIELDS}
+    checklist["note"] = "Seluruh materi sudah sesuai."
+    assert editor.post(f"/api/editor/requests/{request_id}/review",
+                       json=checklist).status_code == 200
+    assert editor.post(f"/api/editor/requests/{request_id}/approve").status_code == 200
+
+
 def test_owner_can_toggle_public(app, book_type_id):
     user = client_for(app, "user@example.com")
     request_id = new_request(user, book_type_id, "Dengan PDF")
     assert upload_pdf(user, request_id).status_code == 201
+    advance_to_ready_for_production(app, user, request_id)
 
     res = user.put(f"/api/requests/{request_id}/visibility", json={"is_public": True})
     assert res.status_code == 200
@@ -39,6 +56,15 @@ def test_owner_can_toggle_public(app, book_type_id):
 
     user.put(f"/api/requests/{request_id}/visibility", json={"is_public": False})
     assert anon.get(f"/books/{request_id}/pdf").status_code == 404
+
+
+def test_toggle_requires_editor_approval(app, book_type_id):
+    user = client_for(app, "user@example.com")
+    request_id = new_request(user, book_type_id, "Belum Diapprove")
+    assert upload_pdf(user, request_id).status_code == 201
+
+    res = user.put(f"/api/requests/{request_id}/visibility", json={"is_public": True})
+    assert res.status_code == 422
 
 
 def test_other_roles_cannot_toggle(app, book_type_id):

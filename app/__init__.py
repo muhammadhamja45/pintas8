@@ -52,6 +52,7 @@ def register_jinja(app):
             "STATUS_LABELS": wf.STATUS_LABELS,
             "STATUS_TONES": wf.STATUS_TONES,
             "ALL_STATUSES": wf.ALL_STATUSES,
+            "PUBLIC_ELIGIBLE_STATUSES": wf.PUBLIC_ELIGIBLE_STATUSES,
             "CHECKLIST_FIELDS": CHECKLIST_FIELDS,
             "TEXT_SECTIONS": TEXT_SECTIONS,
             "unread_count": unread_count(user.id) if user else 0,

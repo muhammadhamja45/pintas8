@@ -17,4 +17,4 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     PERMANENT_SESSION_LIFETIME = 60 * 60 * 24 * 14  # "remember me" window
-    APP_NAME = "Book 2 Management"
+    APP_NAME = "Digital Book DPR"

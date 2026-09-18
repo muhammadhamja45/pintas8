@@ -80,10 +80,18 @@ TRANSITIONS = {
 # Statuses the owning user may still edit request content in.
 USER_EDITABLE = {DRAFT, REVISION_REQUIRED, USER_REVISION}
 
+# Statuses reached only after an editor has approved the request.
+PUBLIC_ELIGIBLE_STATUSES = {EDITOR_APPROVED, READY_FOR_PRODUCTION, PRODUCTION,
+                            QUALITY_CHECK, COMPLETED}
+
 
 def can_transition(old, new, role):
-    """True when `role` is allowed to move a request from `old` to `new`."""
-    return TRANSITIONS.get((old, new)) == role
+    """True when `role` is allowed to move a request from `old` to `new`.
+
+    ADMIN also holds every EDITOR transition.
+    """
+    required = TRANSITIONS.get((old, new))
+    return required == role or (role == "ADMIN" and required == "EDITOR")
 
 
 def allowed_targets(status, role):

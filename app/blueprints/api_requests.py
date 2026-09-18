@@ -253,6 +253,9 @@ def set_visibility(request_id):
     is_public = bool((request.get_json(silent=True) or {}).get("is_public"))
     if is_public and book_request.pdf_file is None:
         return fail("Upload PDF isi buku terlebih dahulu.", code=422)
+    if is_public and book_request.status not in wf.PUBLIC_ELIGIBLE_STATUSES:
+        return fail("Request harus disetujui editor terlebih dahulu sebelum "
+                   "bisa ditampilkan public.", code=422)
     book_request.is_public = is_public
     audit("UPDATE_REQUEST", user=current_user(), request_obj=book_request,
           description=("Menampilkan request secara public" if is_public
