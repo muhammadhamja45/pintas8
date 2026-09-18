@@ -1,0 +1,99 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Dashboard</h1>
+        <p>Ringkasan seluruh pengajuan buku pada sistem.</p>
+    </div>
+</div>
+
+<div class="stat-grid">
+    {{ ui.stat_card('Total Request', 'stat-total') }}
+    {{ ui.stat_card('Incoming', 'stat-incoming', 'is-warning') }}
+    {{ ui.stat_card('Admin Review', 'stat-review') }}
+    {{ ui.stat_card('Editor Queue', 'stat-editor') }}
+    {{ ui.stat_card('Siap Produksi', 'stat-prodqueue', 'is-success') }}
+    {{ ui.stat_card('Sedang Produksi', 'stat-inprod') }}
+    {{ ui.stat_card('Completed', 'stat-completed', 'is-success') }}
+    {{ ui.stat_card('Rejected / Cancelled', 'stat-rejected', 'is-danger') }}
+</div>
+
+<div class="detail-grid">
+    <div class="card">
+        <div class="card-head">
+            <h2>Request Menunggu Tindakan</h2>
+            <a class="btn btn-sm btn-outline" href="{{ url_for('dashboard.admin_queue', queue='incoming') }}">Incoming</a>
+        </div>
+        {{ ui.data_table('pending', [
+            {'label': 'Kode'}, {'label': 'Judul'}, {'label': 'User'},
+            {'label': 'Status'}, {'label': 'Masuk'}
+        ]) }}
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2>Aktivitas Sistem</h2></div>
+        <div class="card-body" id="activity">
+            <div class="loading-state"><span class="spinner"></span>Loading...</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script>
+(function () {
+    App.api.get("/api/stats").then(function (res) {
+        var c = res.data.cards;
+        var map = {
+            "stat-total": c.total, "stat-incoming": c.incoming, "stat-review": c.in_review,
+            "stat-editor": c.editor_queue, "stat-prodqueue": c.production_queue,
+            "stat-inprod": c.in_production, "stat-completed": c.completed,
+            "stat-rejected": c.rejected
+        };
+        Object.keys(map).forEach(function (id) {
+            document.getElementById(id).textContent = map[id];
+        });
+    }).catch(function () { App.toast("Statistik gagal dimuat.", "danger"); });
+
+    new ListTable({
+        endpoint: "/api/admin/requests",
+        tableId: "pending",
+        columns: 5,
+        perPage: 8,
+        params: { status: ["SUBMITTED", "ADMIN_REVIEW", "READY_FOR_PRODUCTION"] },
+        emptyMessage: "Tidak ada request yang menunggu tindakan admin.",
+        renderRow: function (item) {
+            return "<tr>" +
+                '<td><a href="/requests/' + item.id + '">' + App.esc(item.request_code) + "</a></td>" +
+                "<td>" + App.esc(item.title) + "</td>" +
+                "<td>" + App.esc(App.dash(item.owner)) + "</td>" +
+                "<td>" + App.statusBadge(item.status) + "</td>" +
+                '<td class="nowrap small">' + App.esc(App.dash(item.submitted_at || item.created_at)) + "</td></tr>";
+        }
+    });
+
+    var activity = document.getElementById("activity");
+    App.api.get("/api/admin/audit-logs?per_page=10").then(function (res) {
+        var items = res.data.items;
+        if (!items.length) {
+            activity.innerHTML = '<div class="empty-state">Belum ada aktivitas.</div>';
+            return;
+        }
+        activity.innerHTML = '<ul class="timeline">' + items.map(function (log) {
+            return "<li>" +
+                '<div class="tl-time">' + App.esc(log.created_at) + "</div>" +
+                '<div class="tl-title">' + App.esc(log.action) + "</div>" +
+                '<div class="small muted">' + App.esc(log.actor) +
+                (log.actor_role ? " (" + App.esc(log.actor_role) + ")" : "") + "</div>" +
+                (log.description ? '<div class="tl-note">' + App.esc(log.description) + "</div>" : "") +
+                "</li>";
+        }).join("") + "</ul>";
+    }).catch(function () {
+        activity.innerHTML = '<div class="empty-state">Data gagal dimuat.</div>';
+    });
+}());
+</script>
+{% endblock %}

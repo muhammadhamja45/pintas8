@@ -1,0 +1,103 @@
+{% extends "public_base.html" %}
+{% block title %}Login - {{ APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <h1>Masuk ke {{ APP_NAME }}</h1>
+        <p class="small muted mb-3">Gunakan akun yang terdaftar untuk melanjutkan.</p>
+
+        <div id="login-alert" class="alert alert-danger hidden" role="alert"></div>
+
+        <form id="login-form" novalidate>
+            <div class="field">
+                <label for="identity">Username / Email <span class="required">*</span></label>
+                <input type="text" id="identity" name="identity" autocomplete="username"
+                       required autofocus>
+                <div class="field-error hidden" data-error-for="identity"></div>
+            </div>
+
+            <div class="field">
+                <label for="password">Password <span class="required">*</span></label>
+                <div class="password-wrap">
+                    <input type="password" id="password" name="password"
+                           autocomplete="current-password" required>
+                    <button type="button" class="password-toggle" data-target="password">Show</button>
+                </div>
+                <div class="field-error hidden" data-error-for="password"></div>
+            </div>
+
+            <div class="field">
+                <label class="checkbox">
+                    <input type="checkbox" id="remember" name="remember">
+                    <span>Remember me</span>
+                </label>
+            </div>
+
+            <button class="btn btn-block" type="submit" id="login-submit">Login</button>
+        </form>
+
+        <div class="dev-creds">
+            <strong>Akun development:</strong><br>
+            <code>admin@example.com</code>, <code>editor@example.com</code>,
+            <code>production@example.com</code>, <code>user@example.com</code><br>
+            Password: <code>password123</code>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var form = document.getElementById("login-form");
+    var alertBox = document.getElementById("login-alert");
+    var submit = document.getElementById("login-submit");
+    var nextUrl = {{ next | tojson }};
+
+    function showError(message, errors) {
+        alertBox.innerHTML = App.esc(message) +
+            (errors && errors.length
+                ? "<ul><li>" + errors.map(App.esc).join("</li><li>") + "</li></ul>"
+                : "");
+        alertBox.classList.remove("hidden");
+    }
+
+    form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        alertBox.classList.add("hidden");
+        App.qsa(".field-error", form).forEach(function (node) {
+            node.classList.add("hidden");
+        });
+
+        var identity = document.getElementById("identity");
+        var password = document.getElementById("password");
+        var valid = true;
+        [[identity, "Username atau email wajib diisi."],
+         [password, "Password wajib diisi."]].forEach(function (pair) {
+            var input = pair[0];
+            var error = App.qs('[data-error-for="' + input.id + '"]', form);
+            if (!input.value.trim()) {
+                error.textContent = pair[1];
+                error.classList.remove("hidden");
+                input.classList.add("input-invalid");
+                valid = false;
+            } else {
+                input.classList.remove("input-invalid");
+            }
+        });
+        if (!valid) { return; }
+
+        App.busy(submit, App.api.post("/api/auth/login", {
+            identity: identity.value.trim(),
+            password: password.value,
+            remember: document.getElementById("remember").checked
+        }).then(function (res) {
+            window.location.href = nextUrl || res.data.redirect;
+        }).catch(function (err) {
+            showError(err.message, err.errors);
+        }), "Memproses...");
+    });
+}());
+</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Request Buku</h1>
+        <p>Isi data buku terlebih dahulu. Setelah tersimpan sebagai draft, Anda dapat
+           menambahkan anggota, materi text, dan file.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head"><h2>Informasi Buku</h2></div>
+    <div class="card-body">
+        <form id="request-form" novalidate>
+            <div class="grid-2">
+                {{ ui.form_input('title', 'Judul Buku', required=True,
+                                 placeholder='Contoh: Laporan Kegiatan Tahunan 2026') }}
+                {{ ui.form_select('book_type_id', 'Jenis Buku',
+                                  book_types | map(attribute='as_option') | list,
+                                  required=True) }}
+            </div>
+
+            {{ ui.form_textarea('description', 'Deskripsi',
+                                placeholder='Jelaskan isi dan tujuan buku.') }}
+
+            <div class="grid-2">
+                {{ ui.form_input('deadline', 'Deadline', type='date') }}
+                {{ ui.form_input('print_quantity', 'Jumlah Cetak', type='number',
+                                 placeholder='Contoh: 100') }}
+            </div>
+
+            <div class="grid-3">
+                {{ ui.form_input('book_size', 'Ukuran Buku', placeholder='Contoh: A4') }}
+                {{ ui.form_input('paper_type', 'Jenis Kertas', placeholder='Contoh: Art Paper 150gr') }}
+                {{ ui.form_input('finishing', 'Finishing', placeholder='Contoh: Hard cover laminasi') }}
+            </div>
+
+            {{ ui.form_textarea('printing_note', 'Instruksi Percetakan',
+                                placeholder='Catatan khusus untuk tim produksi.') }}
+            {{ ui.form_textarea('extra_note', 'Catatan Tambahan') }}
+
+            <div id="form-alert" class="alert alert-danger hidden"></div>
+
+            <div class="btn-group">
+                <button class="btn" type="submit" id="save-btn">Simpan Draft</button>
+                <a class="btn btn-outline" href="{{ url_for('dashboard.user_requests') }}">Batal</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+    var form = document.getElementById("request-form");
+    var alertBox = document.getElementById("form-alert");
+    var saveBtn = document.getElementById("save-btn");
+
+    function collect() {
+        var data = {};
+        ["title", "book_type_id", "description", "deadline", "print_quantity",
+         "book_size", "paper_type", "finishing", "printing_note", "extra_note"
+        ].forEach(function (name) {
+            data[name] = document.getElementById(name).value.trim();
+        });
+        return data;
+    }
+
+    function clearErrors() {
+        alertBox.classList.add("hidden");
+        App.qsa(".field-error", form).forEach(function (n) { n.classList.add("hidden"); });
+        App.qsa(".input-invalid", form).forEach(function (n) {
+            n.classList.remove("input-invalid");
+        });
+    }
+
+    function markInvalid(id, message) {
+        var input = document.getElementById(id);
+        var error = App.qs('[data-error-for="' + id + '"]', form);
+        if (input) { input.classList.add("input-invalid"); }
+        if (error) { error.textContent = message; error.classList.remove("hidden"); }
+    }
+
+    form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        clearErrors();
+        var data = collect();
+
+        var valid = true;
+        if (!data.title) { markInvalid("title", "Judul buku wajib diisi."); valid = false; }
+        if (!data.book_type_id) { markInvalid("book_type_id", "Jenis buku wajib dipilih."); valid = false; }
+        if (data.print_quantity && Number(data.print_quantity) <= 0) {
+            markInvalid("print_quantity", "Jumlah cetak harus lebih dari 0.");
+            valid = false;
+        }
+        if (!valid) { return; }
+
+        data.book_type_id = Number(data.book_type_id);
+        App.busy(saveBtn, App.api.post("/api/requests", data).then(function (res) {
+            App.toast("Request berhasil dibuat.", "success");
+            window.location.href = "/requests/" + res.data.request.id;
+        }).catch(function (err) {
+            alertBox.innerHTML = App.esc(err.message) +
+                (err.errors && err.errors.length
+                    ? "<ul><li>" + err.errors.map(App.esc).join("</li><li>") + "</li></ul>"
+                    : "");
+            alertBox.classList.remove("hidden");
+        }), "Menyimpan...");
+    });
+}());
+</script>
+{% endblock %}

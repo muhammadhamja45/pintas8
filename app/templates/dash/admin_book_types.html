@@ -1,0 +1,127 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Book Types</h1>
+        <p>Jenis buku yang dapat dipilih user saat membuat request.</p>
+    </div>
+    <div class="btn-group">
+        <button class="btn" id="btn-new-type">+ Tambah Jenis Buku</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="data" id="types">
+            <thead>
+            <tr>
+                <th>Nama</th><th>Deskripsi</th><th>Status</th><th class="text-right"></th>
+            </tr>
+            </thead>
+            <tbody id="types-body">
+            <tr class="state-row"><td colspan="4"><span class="spinner"></span> Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+    var body = document.getElementById("types-body");
+
+    function load() {
+        App.rowState(body, 4, "loading");
+        App.api.get("/api/admin/book-types").then(function (res) {
+            var items = res.data.items;
+            if (!items.length) {
+                App.rowState(body, 4, "empty", "Belum ada jenis buku.");
+                return;
+            }
+            body.innerHTML = items.map(function (type) {
+                return '<tr data-type=\'' + App.esc(JSON.stringify(type)) + "'>" +
+                    "<td>" + App.esc(type.name) + "</td>" +
+                    "<td>" + App.esc(App.dash(type.description)) + "</td>" +
+                    '<td><span class="badge badge-' + (type.is_active ? "success" : "muted") +
+                    '">' + (type.is_active ? "Aktif" : "Nonaktif") + "</span></td>" +
+                    '<td class="actions">' +
+                    '<button class="btn btn-sm btn-outline" data-edit="' + type.id + '">Edit</button> ' +
+                    '<button class="btn btn-sm btn-ghost" data-toggle="' + type.id + '">' +
+                    (type.is_active ? "Nonaktifkan" : "Aktifkan") + "</button></td></tr>";
+            }).join("");
+
+            App.qsa("[data-edit]", body).forEach(function (button) {
+                button.addEventListener("click", function () {
+                    typeDialog(JSON.parse(button.closest("tr").dataset.type));
+                });
+            });
+            App.qsa("[data-toggle]", body).forEach(function (button) {
+                button.addEventListener("click", function () {
+                    var type = JSON.parse(button.closest("tr").dataset.type);
+                    App.confirm({
+                        title: type.is_active ? "Nonaktifkan Jenis Buku" : "Aktifkan Jenis Buku",
+                        message: type.is_active
+                            ? type.name + " tidak akan muncul pada form request baru."
+                            : type.name + " akan dapat dipilih kembali.",
+                        confirmLabel: type.is_active ? "Nonaktifkan" : "Aktifkan",
+                        confirmClass: type.is_active ? "btn-danger" : "btn-success"
+                    }).then(function (res) {
+                        if (!res) { return; }
+                        App.api.post("/api/admin/book-types/" + type.id + "/toggle")
+                            .then(function (r) { App.toast(r.message, "success"); load(); })
+                            .catch(App.error);
+                    });
+                });
+            });
+        }).catch(function (err) {
+            App.rowState(body, 4, "error", err.message, load);
+        });
+    }
+
+    function typeDialog(type) {
+        App.modal({
+            title: type ? "Edit Jenis Buku" : "Tambah Jenis Buku",
+            content:
+                '<div class="field"><label for="t-name">Nama <span class="required">*</span></label>' +
+                '<input type="text" id="t-name" value="' + App.esc(type ? type.name : "") + '"></div>' +
+                '<div class="field"><label for="t-desc">Deskripsi</label>' +
+                '<textarea id="t-desc" rows="3">' +
+                App.esc(type && type.description ? type.description : "") + "</textarea></div>" +
+                '<label class="checkbox"><input type="checkbox" id="t-active"' +
+                (!type || type.is_active ? " checked" : "") + "><span>Aktif</span></label>",
+            buttons: [
+                { label: "Cancel", class: "btn-outline" },
+                { label: "Simpan", class: "btn", onClick: function (close, box) {
+                    var payload = {
+                        name: box.querySelector("#t-name").value.trim(),
+                        description: box.querySelector("#t-desc").value.trim(),
+                        is_active: box.querySelector("#t-active").checked
+                    };
+                    if (!payload.name) {
+                        App.toast("Nama jenis buku wajib diisi.", "danger");
+                        return;
+                    }
+                    var call = type
+                        ? App.api.put("/api/admin/book-types/" + type.id, payload)
+                        : App.api.post("/api/admin/book-types", payload);
+                    App.busy(box.querySelector(".modal-foot .btn:last-child"),
+                        call.then(function () {
+                            close();
+                            App.toast("Jenis buku disimpan.", "success");
+                            load();
+                        }).catch(App.error), "Menyimpan...");
+                } }
+            ]
+        });
+    }
+
+    document.getElementById("btn-new-type").addEventListener("click", function () {
+        typeDialog(null);
+    });
+    load();
+}());
+</script>
+{% endblock %}

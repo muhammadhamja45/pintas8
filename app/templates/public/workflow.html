@@ -1,0 +1,59 @@
+{% extends "public_base.html" %}
+{% block title %}Alur Proses - {{ APP_NAME }}{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding:3rem 0 2.5rem">
+    <div class="container">
+        <span class="eyebrow">Alur Proses</span>
+        <h1>Dari Request sampai Buku Selesai</h1>
+        <p class="lead">Setiap pengajuan melewati tahap berikut secara berurutan.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="step-grid">
+            {% for num, name, desc in steps %}
+            <article class="step-card">
+                <span class="step-num">{{ num }}</span>
+                <h3>{{ name }}</h3>
+                <p>{{ desc }}</p>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section alt">
+    <div class="container">
+        <div class="section-head">
+            <h2>Jika Ada Kesalahan</h2>
+            <p>Editor mengembalikan request dengan catatan. User memperbaiki, lalu
+               request kembali diperiksa editor. Putaran revisi ini dapat berulang dan
+               seluruhnya tersimpan.</p>
+        </div>
+        <div class="step-grid">
+            <article class="step-card">
+                <span class="step-num">A</span>
+                <h3>Editor Review</h3>
+                <p>Editor menemukan kekurangan pada materi buku.</p>
+            </article>
+            <article class="step-card">
+                <span class="step-num">B</span>
+                <h3>Revision Required</h3>
+                <p>Request dikembalikan ke user beserta catatan wajib dari editor.</p>
+            </article>
+            <article class="step-card">
+                <span class="step-num">C</span>
+                <h3>User Revision</h3>
+                <p>User memperbaiki data, text, foto, atau kebutuhan cetak.</p>
+            </article>
+            <article class="step-card">
+                <span class="step-num">D</span>
+                <h3>Editor Review</h3>
+                <p>Editor memeriksa ulang hasil revisi sampai seluruh checklist terpenuhi.</p>
+            </article>
+        </div>
+    </div>
+</section>
+{% endblock %}

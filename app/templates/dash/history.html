@@ -1,0 +1,55 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>History</h1>
+        <p>
+            {% if current_user.role_name == 'USER' %}Riwayat perubahan status pada request Anda.
+            {% else %}Riwayat perubahan status seluruh request pada sistem.{% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="toolbar">
+        {{ ui.search_field('filter-q', 'Cari kode atau judul buku...') }}
+    </div>
+    {{ ui.data_table('history', [
+        {'label': 'Waktu'}, {'label': 'Request'}, {'label': 'Judul'},
+        {'label': 'Dari'}, {'label': 'Menjadi'}, {'label': 'Oleh'}, {'label': 'Catatan'}
+    ]) }}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script>
+(function () {
+    new ListTable({
+        endpoint: "/api/history",
+        tableId: "history",
+        columns: 7,
+        perPage: 20,
+        filters: { "filter-q": "q" },
+        emptyMessage: "Belum ada riwayat.",
+        renderRow: function (h) {
+            return "<tr>" +
+                '<td class="nowrap small">' + App.esc(h.created_at) + "</td>" +
+                "<td>" + (h.request_id
+                    ? '<a href="/requests/' + h.request_id + '">' +
+                      App.esc(App.dash(h.request_code)) + "</a>"
+                    : "-") + "</td>" +
+                "<td>" + App.esc(App.dash(h.title)) + "</td>" +
+                "<td>" + (h.old_status ? App.statusBadge(h.old_status) : "-") + "</td>" +
+                "<td>" + App.statusBadge(h.new_status) + "</td>" +
+                "<td>" + App.esc(h.actor) +
+                (h.actor_role ? '<div class="small muted">' + App.esc(h.actor_role) +
+                 "</div>" : "") + "</td>" +
+                '<td class="small">' + App.esc(App.dash(h.note)) + "</td></tr>";
+        }
+    });
+}());
+</script>
+{% endblock %}

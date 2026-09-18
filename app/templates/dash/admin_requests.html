@@ -1,0 +1,77 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>{{ page_title }}</h1>
+        <p>
+            {% if queue == 'incoming' %}Request yang baru disubmit user dan menunggu diperiksa.
+            {% elif queue == 'approval' %}Request yang sedang Anda review dan menunggu keputusan.
+            {% elif queue == 'editor-queue' %}Request yang sedang ditangani editor.
+            {% elif queue == 'production-queue' %}Request yang siap dan sedang diproduksi.
+            {% else %}Seluruh request buku pada sistem.{% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="toolbar">
+        {{ ui.search_field() }}
+        {% if queue == 'books' %}{{ ui.status_filter(ALL_STATUSES, STATUS_LABELS) }}{% endif %}
+        {{ ui.book_type_filter(book_types) }}
+        {{ ui.date_range() }}
+    </div>
+    {{ ui.data_table('requests', [
+        {'label': 'Kode', 'sort': 'request_code'},
+        {'label': 'Judul', 'sort': 'title'},
+        {'label': 'User'},
+        {'label': 'Jenis'},
+        {'label': 'Deadline', 'sort': 'deadline'},
+        {'label': 'Revisi'},
+        {'label': 'Status', 'sort': 'status'},
+        {'label': 'Diperbarui', 'sort': 'updated_at'},
+        {'label': '', 'class': 'text-right'}
+    ]) }}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script>
+(function () {
+    var FIXED_STATUSES = {{ statuses | tojson }};
+    var filters = {
+        "filter-q": "q", "filter-type": "book_type_id",
+        "filter-from": "date_from", "filter-to": "date_to"
+    };
+    if (document.getElementById("filter-status")) { filters["filter-status"] = "status"; }
+
+    new ListTable({
+        endpoint: "/api/admin/requests",
+        tableId: "requests",
+        columns: 9,
+        params: FIXED_STATUSES.length ? { status: FIXED_STATUSES } : {},
+        filters: filters,
+        emptyMessage: "Tidak ada request pada antrean ini.",
+        renderRow: function (item) {
+            var action = "Detail";
+            if (item.status === "SUBMITTED") { action = "Review"; }
+            else if (item.status === "ADMIN_REVIEW") { action = "Proses"; }
+            else if (item.status === "READY_FOR_PRODUCTION") { action = "Kirim Produksi"; }
+            return "<tr>" +
+                '<td><a href="/requests/' + item.id + '">' + App.esc(item.request_code) + "</a></td>" +
+                "<td>" + App.esc(item.title) + "</td>" +
+                "<td>" + App.esc(App.dash(item.owner)) + "</td>" +
+                "<td>" + App.esc(App.dash(item.book_type)) + "</td>" +
+                '<td class="nowrap">' + App.esc(App.dash(item.deadline)) + "</td>" +
+                "<td>" + item.revision_count + "</td>" +
+                "<td>" + App.statusBadge(item.status) + "</td>" +
+                '<td class="nowrap small">' + App.esc(item.updated_at) + "</td>" +
+                '<td class="actions"><a class="btn btn-sm" href="/requests/' + item.id + '">' +
+                action + "</a></td></tr>";
+        }
+    });
+}());
+</script>
+{% endblock %}

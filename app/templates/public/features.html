@@ -1,0 +1,25 @@
+{% extends "public_base.html" %}
+{% block title %}Fitur - {{ APP_NAME }}{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding:3rem 0 2.5rem">
+    <div class="container">
+        <span class="eyebrow">Fitur</span>
+        <h1>Fitur {{ APP_NAME }}</h1>
+        <p class="lead">Seluruh fitur terhubung langsung dengan basis data dan alur kerja.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="feature-grid">
+            {% for name, desc in features %}
+            <article class="feature-card">
+                <h3>{{ name }}</h3>
+                <p>{{ desc }}</p>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

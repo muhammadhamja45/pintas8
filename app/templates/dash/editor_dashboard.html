@@ -1,0 +1,64 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Dashboard</h1>
+        <p>Antrean pemeriksaan materi buku.</p>
+    </div>
+    <div class="btn-group">
+        <a class="btn" href="{{ url_for('dashboard.editor_queue', queue='review-queue') }}">Buka Review Queue</a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    {{ ui.stat_card('Review Queue', 'stat-queue', 'is-warning') }}
+    {{ ui.stat_card('Menunggu Revisi User', 'stat-revision', 'is-danger') }}
+    {{ ui.stat_card('Siap Produksi', 'stat-ready', 'is-success') }}
+    {{ ui.stat_card('Completed', 'stat-completed', 'is-success') }}
+</div>
+
+<div class="card">
+    <div class="card-head"><h2>Menunggu Pemeriksaan</h2></div>
+    {{ ui.data_table('queue', [
+        {'label': 'Kode'}, {'label': 'Judul'}, {'label': 'User'}, {'label': 'Jenis'},
+        {'label': 'Revisi'}, {'label': 'Status'}, {'label': ''}
+    ]) }}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script>
+(function () {
+    App.api.get("/api/stats").then(function (res) {
+        var c = res.data.cards;
+        document.getElementById("stat-queue").textContent = c.review_queue;
+        document.getElementById("stat-revision").textContent = c.revision;
+        document.getElementById("stat-ready").textContent = c.ready;
+        document.getElementById("stat-completed").textContent = c.completed;
+    }).catch(function () { App.toast("Statistik gagal dimuat.", "danger"); });
+
+    new ListTable({
+        endpoint: "/api/editor/requests",
+        tableId: "queue",
+        columns: 7,
+        perPage: 10,
+        params: { status: ["EDITOR_REVIEW"] },
+        emptyMessage: "Tidak ada request yang menunggu pemeriksaan.",
+        renderRow: function (item) {
+            return "<tr>" +
+                '<td><a href="/requests/' + item.id + '">' + App.esc(item.request_code) + "</a></td>" +
+                "<td>" + App.esc(item.title) + "</td>" +
+                "<td>" + App.esc(App.dash(item.owner)) + "</td>" +
+                "<td>" + App.esc(App.dash(item.book_type)) + "</td>" +
+                "<td>" + item.revision_count + "</td>" +
+                "<td>" + App.statusBadge(item.status) + "</td>" +
+                '<td class="actions"><a class="btn btn-sm" href="/requests/' + item.id +
+                '">Periksa</a></td></tr>';
+        }
+    });
+}());
+</script>
+{% endblock %}

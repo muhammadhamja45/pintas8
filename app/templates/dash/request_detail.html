@@ -1,0 +1,682 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+{% set role = current_user.role_name %}
+{% set is_owner = role == 'USER' and req.user_id == current_user.id %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>{{ req.request_code }}</h1>
+        <p>{{ req.title }} &middot; {{ ui.status_badge(req.status, STATUS_LABELS, STATUS_TONES) }}</p>
+    </div>
+    <div class="btn-group" id="action-bar">
+        {% if role == 'USER' and req.status == 'DRAFT' %}
+            <button class="btn btn-outline" id="btn-edit">Edit Data</button>
+            <button class="btn" id="btn-submit">Submit Request</button>
+            <button class="btn btn-danger" id="btn-cancel">Batalkan</button>
+        {% elif role == 'USER' and req.status in ['REVISION_REQUIRED', 'USER_REVISION'] %}
+            <button class="btn btn-outline" id="btn-edit">Edit Data</button>
+            <button class="btn btn-warning" id="btn-revision">Kirim Revisi</button>
+        {% elif role == 'ADMIN' and req.status == 'SUBMITTED' %}
+            <button class="btn" id="btn-start-review">Mulai Review</button>
+        {% elif role == 'ADMIN' and req.status == 'ADMIN_REVIEW' %}
+            <button class="btn btn-success" id="btn-approve">Approve</button>
+            <button class="btn btn-warning" id="btn-return">Return ke User</button>
+            <button class="btn btn-danger" id="btn-reject">Reject</button>
+        {% elif role == 'ADMIN' and req.status == 'READY_FOR_PRODUCTION' %}
+            <button class="btn btn-success" id="btn-send-production">Kirim ke Produksi</button>
+        {% elif role == 'EDITOR' and req.status == 'EDITOR_REVIEW' %}
+            <button class="btn btn-outline" id="btn-save-checklist">Simpan Checklist</button>
+            <button class="btn btn-warning" id="btn-editor-return">Return ke User</button>
+            <button class="btn btn-success" id="btn-editor-approve">Approve &amp; Ready for Production</button>
+        {% endif %}
+        {% if req.production_order and role in ['ADMIN', 'PRODUCTION'] %}
+            <a class="btn btn-outline" href="{{ url_for('dashboard.production_order_detail', order_id=req.production_order.id) }}">Production Order</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div>
+        <!-- request + book information -->
+        <div class="card">
+            <div class="card-head"><h2>Request Information</h2></div>
+            <div class="card-body">
+                <dl class="kv">
+                    <dt>Request ID</dt><dd>{{ req.request_code }}</dd>
+                    <dt>Judul Buku</dt><dd>{{ req.title }}</dd>
+                    <dt>Jenis Buku</dt><dd>{{ req.book_type.name }}</dd>
+                    <dt>Pengaju</dt><dd>{{ req.owner.full_name }} ({{ req.owner.email }})</dd>
+                    <dt>Jumlah Anggota</dt><dd>{{ req.member_count }}</dd>
+                    <dt>Deadline</dt><dd>{{ req.deadline or '-' }}</dd>
+                    <dt>Deskripsi</dt><dd style="white-space:pre-wrap">{{ req.description or '-' }}</dd>
+                    <dt>Catatan Tambahan</dt><dd style="white-space:pre-wrap">{{ req.extra_note or '-' }}</dd>
+                    <dt>Status Saat Ini</dt><dd>{{ ui.status_badge(req.status, STATUS_LABELS, STATUS_TONES) }}</dd>
+                    <dt>Assignee</dt><dd>{{ req.assignee.full_name if req.assignee else '-' }}</dd>
+                    <dt>Dibuat</dt><dd>{{ req.created_at.strftime('%d %b %Y %H:%M') }}</dd>
+                    <dt>Disubmit</dt><dd>{{ req.submitted_at.strftime('%d %b %Y %H:%M') if req.submitted_at else '-' }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- printing requirements -->
+        <div class="card">
+            <div class="card-head"><h2>Printing Requirements</h2></div>
+            <div class="card-body">
+                <dl class="kv">
+                    <dt>Ukuran Buku</dt><dd>{{ req.book_size or '-' }}</dd>
+                    <dt>Jenis Kertas</dt><dd>{{ req.paper_type or '-' }}</dd>
+                    <dt>Jumlah Cetak</dt><dd>{{ req.print_quantity or '-' }}</dd>
+                    <dt>Finishing</dt><dd>{{ req.finishing or '-' }}</dd>
+                    <dt>Instruksi Percetakan</dt><dd style="white-space:pre-wrap">{{ req.printing_note or '-' }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- members -->
+        <div class="card">
+            <div class="card-head">
+                <h2>Members ({{ req.members | length }})</h2>
+                {% if editable %}<button class="btn btn-sm" id="btn-add-member">+ Tambah Anggota</button>{% endif %}
+            </div>
+            <div class="card-body" id="member-list">
+                {% for member in req.members %}
+                <div class="member-row" data-member="{{ member.id }}">
+                    <div class="photo">
+                        {% if member.photo_file_id %}
+                            <img src="{{ url_for('api_requests.download_file', file_id=member.photo_file_id) }}" alt="Foto {{ member.name }}">
+                        {% else %}{{ member.name[:1] | upper }}{% endif %}
+                    </div>
+                    <div class="info">
+                        <div class="name">{{ member.name }}</div>
+                        <div class="sub">{{ member.position or 'Anggota' }}{% if member.note %} &middot; {{ member.note }}{% endif %}</div>
+                    </div>
+                    {% if editable %}
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline" data-edit-member="{{ member.id }}"
+                                data-name="{{ member.name }}" data-position="{{ member.position or '' }}"
+                                data-note="{{ member.note or '' }}">Edit</button>
+                        <button class="btn btn-sm btn-ghost" data-del-member="{{ member.id }}">Hapus</button>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="empty-state">Belum ada anggota.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- texts -->
+        <div class="card">
+            <div class="card-head">
+                <h2>Text</h2>
+                {% if editable %}<button class="btn btn-sm" id="btn-save-texts">Simpan Text</button>{% endif %}
+            </div>
+            <div class="card-body">
+                {% set text_map = {} %}
+                {% for t in req.texts %}{% set _ = text_map.update({t.section: t.content}) %}{% endfor %}
+                {% for key, label in TEXT_SECTIONS %}
+                <div class="field">
+                    <label for="text-{{ key }}">{{ label }}</label>
+                    {% if editable %}
+                        <textarea id="text-{{ key }}" data-section="{{ key }}">{{ text_map.get(key, '') }}</textarea>
+                    {% else %}
+                        <div style="white-space:pre-wrap;background:var(--muted-bg);padding:.6rem .75rem;border-radius:6px;font-size:.88rem">{{ text_map.get(key) or '-' }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- files -->
+        <div class="card">
+            <div class="card-head">
+                <h2>Files ({{ req.files | length }})</h2>
+                {% if editable or (role == 'PRODUCTION' and req.status in ['PRODUCTION', 'QUALITY_CHECK']) %}
+                <button class="btn btn-sm" id="btn-upload">+ Upload File</button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if is_owner %}
+                <label class="check-row mb-2">
+                    <input type="checkbox" id="chk-public" {% if req.is_public %}checked{% endif %}
+                           {% if not req.pdf_file %}disabled{% endif %}>
+                    <span>Tampilkan di halaman Home (Public)</span>
+                </label>
+                {% if not req.pdf_file %}
+                <p class="small muted mb-2">Upload file PDF isi buku untuk bisa ditampilkan public.</p>
+                {% endif %}
+                {% endif %}
+                {% if req.files %}
+                <div class="file-grid" id="file-grid">
+                    {% for file in req.files %}
+                    <div class="file-card" data-file="{{ file.id }}">
+                        <div class="thumb">
+                            {% if file.is_image %}
+                                <img src="{{ url_for('api_requests.download_file', file_id=file.id) }}" alt="{{ file.original_filename }}" loading="lazy">
+                            {% else %}&#128196;{% endif %}
+                        </div>
+                        <div class="meta">
+                            <span class="name">{{ file.original_filename }}</span>
+                            <span class="sub">{{ file.category | replace('_', ' ') | title }} &middot; {{ file.file_size | filesize }}</span>
+                        </div>
+                        <div class="acts">
+                            {% if file.mime_type == 'application/pdf' %}
+                            <button class="btn btn-sm btn-outline" data-flip-file="{{ file.id }}" data-flip-title="{{ file.original_filename }}">Baca Flipbook</button>
+                            {% endif %}
+                            <a class="btn btn-sm btn-outline" href="{{ url_for('api_requests.download_file', file_id=file.id) }}?download=1">Unduh</a>
+                            {% if editable and file.uploaded_by == current_user.id %}
+                            <button class="btn btn-sm btn-ghost" data-del-file="{{ file.id }}">Hapus</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                {{ ui.empty_state('Belum ada file diunggah.') }}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- editor checklist -->
+        {% if role in ['EDITOR', 'ADMIN'] or req.checklist %}
+        <div class="card">
+            <div class="card-head">
+                <h2>Editor Checklist</h2>
+                {% if req.checklist %}<span class="small muted">Editor: {{ req.checklist.editor.full_name }}</span>{% endif %}
+            </div>
+            <div class="card-body">
+                <div class="checklist-grid">
+                    {% for field, label in CHECKLIST_FIELDS %}
+                    <label class="check-row">
+                        <input type="checkbox" data-check="{{ field }}"
+                               {% if req.checklist and req.checklist[field] %}checked{% endif %}
+                               {% if not (role == 'EDITOR' and req.status == 'EDITOR_REVIEW') %}disabled{% endif %}>
+                        <span>{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <div class="field mt-3">
+                    <label for="checklist-note">Catatan Editor</label>
+                    <textarea id="checklist-note" rows="3"
+                        {% if not (role == 'EDITOR' and req.status == 'EDITOR_REVIEW') %}disabled{% endif %}>{{ req.checklist.note if req.checklist else '' }}</textarea>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- right column -->
+    <div>
+        <div class="card">
+            <div class="card-head"><h2>Revision History ({{ req.revisions | length }})</h2></div>
+            <div class="card-body">
+                {% for revision in req.revisions %}
+                <div class="revision-item">
+                    <div class="rev-head">
+                        <strong>Revision #{{ revision.revision_number }}</strong>
+                        <span class="badge badge-{{ 'success' if revision.resolved_at else 'warning' }}">
+                            {{ 'Selesai' if revision.resolved_at else 'Menunggu user' }}
+                        </span>
+                    </div>
+                    <div class="rev-body">
+                        <span class="label">Editor ({{ revision.requester.full_name if revision.requester else '-' }})</span>
+                        <div style="white-space:pre-wrap">{{ revision.editor_note }}</div>
+                        {% if revision.user_response %}
+                        <span class="label">User ({{ revision.resolver.full_name if revision.resolver else '-' }})</span>
+                        <div style="white-space:pre-wrap">{{ revision.user_response }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="small muted mt-1">{{ revision.created_at.strftime('%d %b %Y %H:%M') }}</div>
+                </div>
+                {% else %}
+                <div class="empty-state small">Belum ada revisi.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h2>Timeline</h2></div>
+            <div class="card-body">
+                <ul class="timeline">
+                    {% for entry in req.history %}
+                    <li>
+                        <div class="tl-time">{{ entry.created_at.strftime('%d %b %Y %H:%M') }}</div>
+                        <div class="tl-title">
+                            {{ ui.status_badge(entry.new_status, STATUS_LABELS, STATUS_TONES) }}
+                        </div>
+                        <div class="small muted">
+                            {{ entry.actor.full_name if entry.actor else 'Sistem' }}
+                            {% if entry.old_status %}&middot; dari {{ STATUS_LABELS.get(entry.old_status, entry.old_status) }}{% endif %}
+                        </div>
+                        {% if entry.note %}<div class="tl-note">{{ entry.note }}</div>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if editable %}
+<template id="tpl-member-form">
+    <div class="field"><label for="m-name">Nama <span class="required">*</span></label>
+        <input type="text" id="m-name"></div>
+    <div class="field"><label for="m-position">Posisi / Jabatan</label>
+        <input type="text" id="m-position"></div>
+    <div class="field"><label for="m-note">Catatan</label><input type="text" id="m-note"></div>
+    <div class="field"><label for="m-photo">Foto Anggota</label>
+        <input type="file" id="m-photo" accept="image/*">
+        <div class="small muted mt-1">Opsional. JPG, PNG, GIF, atau WEBP.</div></div>
+</template>
+{% endif %}
+{% endblock %}
+
+{% block page_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+<script src="{{ url_for('static', filename='js/flipbook.js') }}"></script>
+<script>
+(function () {
+    var REQ_ID = {{ req.id }};
+    var CHECK_FIELDS = {{ CHECKLIST_FIELDS | map(attribute=0) | list | tojson }};
+
+    function reload() { window.location.reload(); }
+    function on(id, handler) {
+        var node = document.getElementById(id);
+        if (node) { node.addEventListener("click", handler); }
+    }
+    function act(button, promise, successMessage) {
+        return App.busy(button, promise.then(function () {
+            App.toast(successMessage, "success");
+            setTimeout(reload, 500);
+        }).catch(App.error));
+    }
+
+    /* ---------------- user actions ---------------- */
+    on("btn-submit", function (ev) {
+        App.confirm({
+            title: "Submit Request",
+            message: "Request akan dikirim ke Admin untuk diperiksa dan tidak dapat " +
+                     "diubah selama proses approval berlangsung.",
+            confirmLabel: "Submit"
+        }).then(function (res) {
+            if (res) { act(ev.target, App.api.post("/api/requests/" + REQ_ID + "/submit"),
+                           "Request berhasil disubmit."); }
+        });
+    });
+
+    on("btn-cancel", function (ev) {
+        App.confirm({
+            title: "Batalkan Request", confirmLabel: "Batalkan", confirmClass: "btn-danger",
+            reason: true, reasonRequired: true, reasonLabel: "Alasan pembatalan"
+        }).then(function (res) {
+            if (res) { act(ev.target, App.api.post("/api/requests/" + REQ_ID + "/cancel",
+                           { note: res.note }), "Request dibatalkan."); }
+        });
+    });
+
+    on("btn-revision", function (ev) {
+        App.confirm({
+            title: "Kirim Revisi",
+            message: "Jelaskan perbaikan yang sudah Anda lakukan. Request akan kembali " +
+                     "diperiksa Editor.",
+            confirmLabel: "Kirim", reason: true, reasonRequired: true,
+            reasonLabel: "Catatan perbaikan"
+        }).then(function (res) {
+            if (res) { act(ev.target, App.api.post("/api/requests/" + REQ_ID + "/revision",
+                           { response: res.note }), "Revisi berhasil dikirim."); }
+        });
+    });
+
+    /* ---------------- admin actions ---------------- */
+    on("btn-start-review", function (ev) {
+        act(ev.target, App.api.post("/api/admin/requests/" + REQ_ID + "/review"),
+            "Review dimulai.");
+    });
+
+    on("btn-approve", function (ev) {
+        App.confirm({
+            title: "Approve Request",
+            message: "Request akan diteruskan ke Editor untuk pemeriksaan materi.",
+            confirmLabel: "Approve", confirmClass: "btn-success",
+            reason: true, reasonLabel: "Catatan (opsional)"
+        }).then(function (res) {
+            if (res) { act(ev.target, App.api.post("/api/admin/requests/" + REQ_ID + "/approve",
+                           { note: res.note }), "Request disetujui."); }
+        });
+    });
+
+    on("btn-reject", function (ev) {
+        App.confirm({
+            title: "Reject Request", confirmLabel: "Reject", confirmClass: "btn-danger",
+            reason: true, reasonRequired: true, reasonLabel: "Alasan penolakan"
+        }).then(function (res) {
+            if (res) { act(ev.target, App.api.post("/api/admin/requests/" + REQ_ID + "/reject",
+                           { note: res.note }), "Request ditolak."); }
+        });
+    });
+
+    on("btn-return", function (ev) {
+        App.confirm({
+            title: "Return ke User", confirmLabel: "Return", confirmClass: "btn-warning",
+            reason: true, reasonRequired: true, reasonLabel: "Catatan untuk user"
+        }).then(function (res) {
+            if (res) { act(ev.target, App.api.post("/api/admin/requests/" + REQ_ID + "/return",
+                           { note: res.note }), "Request dikembalikan ke user."); }
+        });
+    });
+
+    on("btn-send-production", function (ev) {
+        App.confirm({
+            title: "Kirim ke Produksi",
+            message: "Production order akan dibuat dan tim produksi menerima notifikasi.",
+            confirmLabel: "Kirim", confirmClass: "btn-success",
+            reason: true, reasonLabel: "Catatan produksi (opsional)"
+        }).then(function (res) {
+            if (res) { act(ev.target, App.api.post(
+                "/api/admin/requests/" + REQ_ID + "/send-to-production", { note: res.note }),
+                "Request dikirim ke produksi."); }
+        });
+    });
+
+    /* ---------------- editor actions ---------------- */
+    function checklistPayload() {
+        var payload = { note: (document.getElementById("checklist-note") || {}).value || "" };
+        CHECK_FIELDS.forEach(function (field) {
+            var box = App.qs('[data-check="' + field + '"]');
+            if (box) { payload[field] = box.checked; }
+        });
+        return payload;
+    }
+
+    on("btn-save-checklist", function (ev) {
+        App.busy(ev.target, App.api.post("/api/editor/requests/" + REQ_ID + "/review",
+            checklistPayload()).then(function () {
+            App.toast("Checklist disimpan.", "success");
+        }).catch(App.error), "Menyimpan...");
+    });
+
+    on("btn-editor-return", function (ev) {
+        App.confirm({
+            title: "Return ke User untuk Revisi",
+            message: "Jelaskan dengan detail bagian mana yang harus diperbaiki user.",
+            confirmLabel: "Return", confirmClass: "btn-warning",
+            reason: true, reasonRequired: true, reasonLabel: "Catatan revisi",
+            reasonPlaceholder: "Contoh: Foto anggota nomor 4 belum tersedia."
+        }).then(function (res) {
+            if (!res) { return; }
+            // Persist the checklist first so the editor's ticks are not lost.
+            App.busy(ev.target, App.api.post("/api/editor/requests/" + REQ_ID + "/review",
+                checklistPayload()).catch(function () { return null; }).then(function () {
+                return App.api.post("/api/editor/requests/" + REQ_ID + "/return",
+                                    { note: res.note });
+            }).then(function () {
+                App.toast("Request dikembalikan untuk revisi.", "success");
+                setTimeout(reload, 500);
+            }).catch(App.error), "Memproses...");
+        });
+    });
+
+    on("btn-editor-approve", function (ev) {
+        App.confirm({
+            title: "Approve & Ready for Production",
+            message: "Seluruh checklist harus terpenuhi. Request akan ditandai siap produksi.",
+            confirmLabel: "Approve", confirmClass: "btn-success",
+            reason: true, reasonLabel: "Catatan (opsional)"
+        }).then(function (res) {
+            if (!res) { return; }
+            App.busy(ev.target, App.api.post("/api/editor/requests/" + REQ_ID + "/review",
+                checklistPayload()).then(function () {
+                return App.api.post("/api/editor/requests/" + REQ_ID + "/approve",
+                                    { note: res.note });
+            }).then(function () {
+                App.toast("Request disetujui dan siap produksi.", "success");
+                setTimeout(reload, 500);
+            }).catch(App.error), "Memproses...");
+        });
+    });
+
+    /* ---------------- edit data ---------------- */
+    var BOOK_TYPES = {{ book_types | map(attribute='as_option') | list | tojson }};
+    var CURRENT = {{ {
+        'title': req.title, 'book_type_id': req.book_type_id,
+        'description': req.description or '', 'deadline': req.deadline.isoformat() if req.deadline else '',
+        'print_quantity': req.print_quantity or '', 'book_size': req.book_size or '',
+        'paper_type': req.paper_type or '', 'finishing': req.finishing or '',
+        'printing_note': req.printing_note or '', 'extra_note': req.extra_note or ''
+    } | tojson }};
+
+    on("btn-edit", function () {
+        var typeOptions = BOOK_TYPES.map(function (pair) {
+            return '<option value="' + pair[0] + '"' +
+                (pair[0] === CURRENT.book_type_id ? " selected" : "") + ">" +
+                App.esc(pair[1]) + "</option>";
+        }).join("");
+
+        function text(id, label, value) {
+            return '<div class="field"><label for="' + id + '">' + label + "</label>" +
+                '<textarea id="' + id + '" rows="3">' + App.esc(value) + "</textarea></div>";
+        }
+        function input(id, label, value, type) {
+            return '<div class="field"><label for="' + id + '">' + label + "</label>" +
+                '<input type="' + (type || "text") + '" id="' + id + '" value="' +
+                App.esc(value) + '"></div>';
+        }
+
+        App.modal({
+            title: "Edit Data Request",
+            large: true,
+            content:
+                '<div class="grid-2">' +
+                input("e-title", 'Judul Buku <span class="required">*</span>', CURRENT.title) +
+                '<div class="field"><label for="e-type">Jenis Buku <span class="required">*</span></label>' +
+                '<select id="e-type">' + typeOptions + "</select></div></div>" +
+                text("e-description", "Deskripsi", CURRENT.description) +
+                '<div class="grid-2">' +
+                input("e-deadline", "Deadline", CURRENT.deadline, "date") +
+                input("e-quantity", "Jumlah Cetak", CURRENT.print_quantity, "number") +
+                "</div>" +
+                '<div class="grid-3">' +
+                input("e-size", "Ukuran Buku", CURRENT.book_size) +
+                input("e-paper", "Jenis Kertas", CURRENT.paper_type) +
+                input("e-finishing", "Finishing", CURRENT.finishing) +
+                "</div>" +
+                text("e-printing", "Instruksi Percetakan", CURRENT.printing_note) +
+                text("e-extra", "Catatan Tambahan", CURRENT.extra_note),
+            buttons: [
+                { label: "Cancel", class: "btn-outline" },
+                { label: "Simpan", class: "btn", onClick: function (close, box) {
+                    var title = box.querySelector("#e-title").value.trim();
+                    if (!title) { App.toast("Judul buku wajib diisi.", "danger"); return; }
+                    var payload = {
+                        title: title,
+                        book_type_id: Number(box.querySelector("#e-type").value),
+                        description: box.querySelector("#e-description").value.trim(),
+                        deadline: box.querySelector("#e-deadline").value,
+                        print_quantity: box.querySelector("#e-quantity").value,
+                        book_size: box.querySelector("#e-size").value.trim(),
+                        paper_type: box.querySelector("#e-paper").value.trim(),
+                        finishing: box.querySelector("#e-finishing").value.trim(),
+                        printing_note: box.querySelector("#e-printing").value.trim(),
+                        extra_note: box.querySelector("#e-extra").value.trim()
+                    };
+                    App.busy(box.querySelector(".modal-foot .btn:last-child"),
+                        App.api.put("/api/requests/" + REQ_ID, payload).then(function () {
+                            close();
+                            App.toast("Request berhasil disimpan.", "success");
+                            reload();
+                        }).catch(App.error), "Menyimpan...");
+                } }
+            ]
+        });
+    });
+
+    /* ---------------- texts ---------------- */
+    on("btn-save-texts", function (ev) {
+        var texts = {};
+        App.qsa("[data-section]").forEach(function (node) {
+            texts[node.dataset.section] = node.value;
+        });
+        App.busy(ev.target, App.api.put("/api/requests/" + REQ_ID + "/texts", { texts: texts })
+            .then(function () { App.toast("Text berhasil disimpan.", "success"); })
+            .catch(App.error), "Menyimpan...");
+    });
+
+    /* ---------------- members ---------------- */
+    function memberDialog(member) {
+        var tpl = document.getElementById("tpl-member-form");
+        if (!tpl) { return; }
+        var content = tpl.content.cloneNode(true);
+        var wrap = document.createElement("div");
+        wrap.appendChild(content);
+
+        if (member) {
+            wrap.querySelector("#m-name").value = member.name || "";
+            wrap.querySelector("#m-position").value = member.position || "";
+            wrap.querySelector("#m-note").value = member.note || "";
+        }
+
+        App.modal({
+            title: member ? "Edit Anggota" : "Tambah Anggota",
+            content: wrap,
+            buttons: [
+                { label: "Cancel", class: "btn-outline" },
+                { label: "Simpan", class: "btn", onClick: function (close, box) {
+                    var name = box.querySelector("#m-name").value.trim();
+                    if (!name) { App.toast("Nama anggota wajib diisi.", "danger"); return; }
+                    var data = {
+                        name: name,
+                        position: box.querySelector("#m-position").value.trim(),
+                        note: box.querySelector("#m-note").value.trim()
+                    };
+                    var photo = box.querySelector("#m-photo").files[0];
+
+                    var chain = Promise.resolve(null);
+                    if (photo) {
+                        var form = new FormData();
+                        form.append("file", photo);
+                        form.append("category", "MEMBER_PHOTO");
+                        chain = App.api.upload("/api/requests/" + REQ_ID + "/files", form)
+                            .then(function (res) { return res.data.file.id; });
+                    }
+                    chain.then(function (fileId) {
+                        if (fileId) { data.photo_file_id = fileId; }
+                        return member
+                            ? App.api.put("/api/requests/" + REQ_ID + "/members/" + member.id, data)
+                            : App.api.post("/api/requests/" + REQ_ID + "/members", data);
+                    }).then(function () {
+                        close();
+                        App.toast("Anggota disimpan.", "success");
+                        reload();
+                    }).catch(App.error);
+                } }
+            ]
+        });
+    }
+
+    on("btn-add-member", function () { memberDialog(null); });
+
+    App.qsa("[data-edit-member]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            memberDialog({
+                id: button.dataset.editMember,
+                name: button.dataset.name,
+                position: button.dataset.position,
+                note: button.dataset.note
+            });
+        });
+    });
+
+    App.qsa("[data-del-member]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            App.confirm({
+                title: "Hapus Anggota", message: "Anggota ini akan dihapus dari request.",
+                confirmLabel: "Hapus", confirmClass: "btn-danger"
+            }).then(function (res) {
+                if (!res) { return; }
+                App.api.del("/api/requests/" + REQ_ID + "/members/" + button.dataset.delMember)
+                    .then(function () { App.toast("Anggota dihapus.", "success"); reload(); })
+                    .catch(App.error);
+            });
+        });
+    });
+
+    /* ---------------- visibility ---------------- */
+    var publicBox = document.getElementById("chk-public");
+    if (publicBox) {
+        publicBox.addEventListener("change", function () {
+            var checked = publicBox.checked;
+            App.api.put("/api/requests/" + REQ_ID + "/visibility", { is_public: checked })
+                .then(function () {
+                    App.toast(checked ? "Request kini tampil di Home." : "Request disembunyikan dari Home.", "success");
+                }).catch(function (err) { publicBox.checked = !checked; App.error(err); });
+        });
+    }
+
+    /* ---------------- flipbook ---------------- */
+    App.qsa("[data-flip-file]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            App.openFlipbook("/api/files/" + button.dataset.flipFile, button.dataset.flipTitle);
+        });
+    });
+
+    /* ---------------- files ---------------- */
+    on("btn-upload", function () {
+        var isProduction = {{ 'true' if role == 'PRODUCTION' else 'false' }};
+        var options = isProduction
+            ? '<option value="FINAL">File Final</option>'
+            : '<option value="COVER">Cover</option>' +
+              '<option value="MEMBER_PHOTO">Foto Anggota</option>' +
+              '<option value="DOCUMENTATION">Foto Dokumentasi</option>' +
+              '<option value="SUPPORT">Foto Pendukung</option>' +
+              '<option value="ATTACHMENT">Lampiran</option>';
+
+        App.modal({
+            title: "Upload File",
+            content: '<div class="field"><label for="up-category">Kategori</label>' +
+                     '<select id="up-category">' + options + "</select></div>" +
+                     '<div class="field"><label for="up-file">File</label>' +
+                     '<input type="file" id="up-file"></div>' +
+                     '<div class="small muted">Maksimal 50 MB. Format: JPG, PNG, GIF, WEBP, ' +
+                     "PDF, DOC, DOCX, XLS, XLSX, ZIP, TXT.</div>",
+            buttons: [
+                { label: "Cancel", class: "btn-outline" },
+                { label: "Upload", class: "btn", onClick: function (close, box) {
+                    var file = box.querySelector("#up-file").files[0];
+                    if (!file) { App.toast("Pilih file terlebih dahulu.", "danger"); return; }
+                    var form = new FormData();
+                    form.append("file", file);
+                    form.append("category", box.querySelector("#up-category").value);
+                    var uploadBtn = box.querySelector(".modal-foot .btn:last-child");
+                    App.busy(uploadBtn,
+                        App.api.upload("/api/requests/" + REQ_ID + "/files", form)
+                            .then(function () {
+                                close();
+                                App.toast("File berhasil diunggah.", "success");
+                                reload();
+                            }).catch(App.error), "Mengunggah...");
+                } }
+            ]
+        });
+    });
+
+    App.qsa("[data-del-file]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            App.confirm({
+                title: "Hapus File", message: "File akan dihapus permanen.",
+                confirmLabel: "Hapus", confirmClass: "btn-danger"
+            }).then(function (res) {
+                if (!res) { return; }
+                App.api.del("/api/requests/" + REQ_ID + "/files/" + button.dataset.delFile)
+                    .then(function () { App.toast("File dihapus.", "success"); reload(); })
+                    .catch(App.error);
+            });
+        });
+    });
+}());
+</script>
+{% endblock %}

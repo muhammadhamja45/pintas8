@@ -1,0 +1,167 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Users</h1>
+        <p>Kelola akun dan role pengguna sistem.</p>
+    </div>
+    <div class="btn-group">
+        <button class="btn" id="btn-new-user">+ Tambah User</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="toolbar">
+        {{ ui.search_field('filter-q', 'Cari nama, username, atau email...') }}
+        <div class="field">
+            <label for="filter-role">Role</label>
+            <select id="filter-role">
+                <option value="">Semua role</option>
+                {% for role in roles %}<option value="{{ role.name }}">{{ role.name }}</option>{% endfor %}
+            </select>
+        </div>
+    </div>
+    {{ ui.data_table('users', [
+        {'label': 'Nama'}, {'label': 'Username'}, {'label': 'Email'},
+        {'label': 'Role'}, {'label': 'Status'}, {'label': 'Login Terakhir'},
+        {'label': '', 'class': 'text-right'}
+    ]) }}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script>
+(function () {
+    var ROLES = {{ roles | map(attribute='name') | list | tojson }};
+    var ME = {{ current_user.id }};
+    var table;
+
+    function userDialog(user) {
+        var roleOptions = ROLES.map(function (name) {
+            return '<option value="' + name + '"' +
+                (user && user.role === name ? " selected" : "") + ">" + name + "</option>";
+        }).join("");
+
+        App.modal({
+            title: user ? "Edit User" : "Tambah User",
+            content:
+                '<div class="grid-2">' +
+                '<div class="field"><label for="u-fullname">Nama Lengkap <span class="required">*</span></label>' +
+                '<input type="text" id="u-fullname" value="' + App.esc(user ? user.full_name : "") + '"></div>' +
+                '<div class="field"><label for="u-username">Username <span class="required">*</span></label>' +
+                '<input type="text" id="u-username" value="' + App.esc(user ? user.username : "") + '"></div>' +
+                "</div>" +
+                '<div class="grid-2">' +
+                '<div class="field"><label for="u-email">Email <span class="required">*</span></label>' +
+                '<input type="email" id="u-email" value="' + App.esc(user ? user.email : "") + '"></div>' +
+                '<div class="field"><label for="u-phone">Telepon</label>' +
+                '<input type="text" id="u-phone" value="' + App.esc(user && user.phone ? user.phone : "") + '"></div>' +
+                "</div>" +
+                '<div class="grid-2">' +
+                '<div class="field"><label for="u-role">Role <span class="required">*</span></label>' +
+                '<select id="u-role">' + roleOptions + "</select></div>" +
+                '<div class="field"><label for="u-password">Password' +
+                (user ? "" : ' <span class="required">*</span>') + "</label>" +
+                '<input type="password" id="u-password" autocomplete="new-password">' +
+                '<div class="small muted mt-1">' +
+                (user ? "Kosongkan bila tidak diubah." : "Minimal 6 karakter.") +
+                "</div></div></div>" +
+                '<label class="checkbox"><input type="checkbox" id="u-active"' +
+                (!user || user.is_active ? " checked" : "") + "><span>Akun aktif</span></label>",
+            large: true,
+            buttons: [
+                { label: "Cancel", class: "btn-outline" },
+                { label: "Simpan", class: "btn", onClick: function (close, box) {
+                    var payload = {
+                        full_name: box.querySelector("#u-fullname").value.trim(),
+                        username: box.querySelector("#u-username").value.trim(),
+                        email: box.querySelector("#u-email").value.trim(),
+                        phone: box.querySelector("#u-phone").value.trim(),
+                        role: box.querySelector("#u-role").value,
+                        is_active: box.querySelector("#u-active").checked
+                    };
+                    var password = box.querySelector("#u-password").value;
+                    if (password) { payload.password = password; }
+                    if (!payload.full_name || !payload.username || !payload.email) {
+                        App.toast("Nama, username, dan email wajib diisi.", "danger");
+                        return;
+                    }
+                    if (!user && !password) {
+                        App.toast("Password wajib diisi.", "danger");
+                        return;
+                    }
+
+                    var call = user
+                        ? App.api.put("/api/admin/users/" + user.id, payload)
+                        : App.api.post("/api/admin/users", payload);
+                    App.busy(box.querySelector(".modal-foot .btn:last-child"),
+                        call.then(function () {
+                            close();
+                            App.toast("User berhasil disimpan.", "success");
+                            table.reload();
+                        }).catch(App.error), "Menyimpan...");
+                } }
+            ]
+        });
+    }
+
+    table = new ListTable({
+        endpoint: "/api/admin/users",
+        tableId: "users",
+        columns: 7,
+        filters: { "filter-q": "q", "filter-role": "role" },
+        emptyMessage: "Tidak ada user yang sesuai filter.",
+        renderRow: function (user) {
+            return '<tr data-user=\'' + App.esc(JSON.stringify(user)) + "'>" +
+                "<td>" + App.esc(user.full_name) + "</td>" +
+                "<td>" + App.esc(user.username) + "</td>" +
+                "<td>" + App.esc(user.email) + "</td>" +
+                '<td><span class="badge badge-info">' + App.esc(user.role) + "</span></td>" +
+                '<td><span class="badge badge-' + (user.is_active ? "success" : "muted") +
+                '">' + (user.is_active ? "Aktif" : "Nonaktif") + "</span></td>" +
+                '<td class="nowrap small">' + App.esc(App.dash(user.last_login_at)) + "</td>" +
+                '<td class="actions">' +
+                '<button class="btn btn-sm btn-outline" data-edit="' + user.id + '">Edit</button> ' +
+                (user.id === ME ? "" :
+                    '<button class="btn btn-sm btn-ghost" data-toggle="' + user.id + '">' +
+                    (user.is_active ? "Nonaktifkan" : "Aktifkan") + "</button>") +
+                "</td></tr>";
+        },
+        onLoaded: function (items, meta, body) {
+            App.qsa("[data-edit]", body).forEach(function (button) {
+                button.addEventListener("click", function () {
+                    var row = button.closest("tr");
+                    userDialog(JSON.parse(row.dataset.user));
+                });
+            });
+            App.qsa("[data-toggle]", body).forEach(function (button) {
+                button.addEventListener("click", function () {
+                    var user = JSON.parse(button.closest("tr").dataset.user);
+                    App.confirm({
+                        title: user.is_active ? "Nonaktifkan User" : "Aktifkan User",
+                        message: user.full_name + " akan " +
+                            (user.is_active ? "tidak dapat login lagi." : "dapat login kembali."),
+                        confirmLabel: user.is_active ? "Nonaktifkan" : "Aktifkan",
+                        confirmClass: user.is_active ? "btn-danger" : "btn-success"
+                    }).then(function (res) {
+                        if (!res) { return; }
+                        App.api.post("/api/admin/users/" + user.id + "/toggle")
+                            .then(function (r) {
+                                App.toast(r.message, "success");
+                                table.reload();
+                            }).catch(App.error);
+                    });
+                });
+            });
+        }
+    });
+
+    document.getElementById("btn-new-user").addEventListener("click", function () {
+        userDialog(null);
+    });
+}());
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "dash_base.html" %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Notifications</h1>
+        <p>Pemberitahuan terkait request yang Anda tangani.</p>
+    </div>
+    <div class="btn-group">
+        <button class="btn btn-outline" id="mark-all">Tandai semua dibaca</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="toolbar">
+        <div class="field">
+            <label for="filter-unread">Tampilkan</label>
+            <select id="filter-unread">
+                <option value="">Semua notifikasi</option>
+                <option value="1">Belum dibaca</option>
+            </select>
+        </div>
+    </div>
+    <div class="card-body" id="notifications">
+        <div class="loading-state"><span class="spinner"></span>Loading...</div>
+    </div>
+    <div class="pagination" id="notif-pagination"></div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+    var box = document.getElementById("notifications");
+    var pager = document.getElementById("notif-pagination");
+    var page = 1;
+
+    var TONES = { INFO: "info", SUCCESS: "success", WARNING: "warning", DANGER: "danger" };
+
+    function load() {
+        box.innerHTML = '<div class="loading-state"><span class="spinner"></span>Loading...</div>';
+        var unread = document.getElementById("filter-unread").value;
+        App.api.get("/api/notifications" + App.qsBuild({ page: page, per_page: 15,
+                                                         unread: unread }))
+            .then(function (res) {
+                var items = res.data.items;
+                if (!items.length) {
+                    box.innerHTML = '<div class="empty-state">' +
+                        '<span class="empty-icon">\u{1F514}</span>Belum ada notifikasi.</div>';
+                } else {
+                    box.innerHTML = items.map(function (n) {
+                        return '<div class="notif-item ' + (n.is_read ? "" : "unread") + '">' +
+                            '<div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap">' +
+                            '<span class="notif-title">' + App.esc(n.title) + "</span>" +
+                            '<span class="badge badge-' + (TONES[n.type] || "muted") + '">' +
+                            App.esc(n.type) + "</span></div>" +
+                            '<span class="notif-msg">' + App.esc(n.message) + "</span>" +
+                            '<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-top:.35rem">' +
+                            '<span class="notif-time">' + App.esc(n.created_at) + "</span>" +
+                            '<span class="btn-group">' +
+                            (n.request_id ? '<a class="btn btn-sm btn-outline" href="/requests/' +
+                                n.request_id + '">Buka Request</a>' : "") +
+                            (n.is_read ? "" : '<button class="btn btn-sm btn-ghost" data-read="' +
+                                n.id + '">Tandai dibaca</button>') +
+                            "</span></div></div>";
+                    }).join("");
+
+                    App.qsa("[data-read]", box).forEach(function (button) {
+                        button.addEventListener("click", function () {
+                            App.api.post("/api/notifications/" + button.dataset.read + "/read")
+                                .then(function (r) {
+                                    window.updateNotifBadge(r.data.unread);
+                                    load();
+                                }).catch(App.error);
+                        });
+                    });
+                }
+                window.updateNotifBadge(res.data.unread);
+                App.renderPagination(pager, res.data, function (target) {
+                    page = target;
+                    load();
+                });
+            }).catch(function (err) {
+                box.innerHTML = '<div class="empty-state">' + App.esc(err.message ||
+                    "Data gagal dimuat.") + "</div>";
+            });
+    }
+
+    document.getElementById("filter-unread").addEventListener("change", function () {
+        page = 1;
+        load();
+    });
+    document.getElementById("mark-all").addEventListener("click", function (ev) {
+        App.busy(ev.target, App.api.post("/api/notifications/read-all").then(function () {
+            window.updateNotifBadge(0);
+            App.toast("Semua notifikasi ditandai dibaca.", "success");
+            load();
+        }).catch(App.error), "Memproses...");
+    });
+
+    load();
+}());
+</script>
+{% endblock %}

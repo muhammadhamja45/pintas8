@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% import "components.html" as ui %}
+{% block title %}{{ page_title }} - {{ APP_NAME }}{% endblock %}
+
+{% set role = current_user.role_name %}
+
+{% set NAV = {
+    'USER': [
+        ('main',   None,               None,                                  None),
+        ('Dashboard',      '▣', url_for('dashboard.user_dashboard'),    'dashboard'),
+        ('Request Buku',   '\U0001F4DA', url_for('dashboard.user_request_new'), 'request-new'),
+        ('Request Saya',   '\U0001F4CB', url_for('dashboard.user_requests'),    'requests'),
+        ('Revision',       '✎', url_for('dashboard.user_revision'),     'revision'),
+        ('lainnya', None, None, None),
+        ('Notifications',  '\U0001F514', url_for('dashboard.notifications'),    'notifications'),
+        ('History',        '\U0001F551', url_for('dashboard.history'),          'history'),
+        ('Profile',        '\U0001F464', url_for('dashboard.profile'),          'profile')
+    ],
+    'ADMIN': [
+        ('main', None, None, None),
+        ('Dashboard',         '▣', url_for('dashboard.admin_dashboard'), 'dashboard'),
+        ('workflow', None, None, None),
+        ('Incoming Requests', '\U0001F4E5', url_for('dashboard.admin_queue', queue='incoming'), 'incoming'),
+        ('Approval',          '✔', url_for('dashboard.admin_queue', queue='approval'), 'approval'),
+        ('Editor Queue',      '\U0001F4DD', url_for('dashboard.admin_queue', queue='editor-queue'), 'editor-queue'),
+        ('Production Queue',  '\U0001F5A8', url_for('dashboard.admin_queue', queue='production-queue'), 'production-queue'),
+        ('All Books',         '\U0001F4DA', url_for('dashboard.admin_queue', queue='books'), 'books'),
+        ('master data', None, None, None),
+        ('Users',             '\U0001F465', url_for('dashboard.admin_users'), 'users'),
+        ('Book Types',        '\U0001F3F7', url_for('dashboard.admin_book_types'), 'book-types'),
+        ('lainnya', None, None, None),
+        ('History',           '\U0001F551', url_for('dashboard.history'), 'history'),
+        ('Audit Log',         '\U0001F4DC', url_for('dashboard.admin_audit_log'), 'audit-log'),
+        ('Notifications',     '\U0001F514', url_for('dashboard.notifications'), 'notifications'),
+        ('Profile',           '\U0001F464', url_for('dashboard.profile'), 'profile')
+    ],
+    'EDITOR': [
+        ('main', None, None, None),
+        ('Dashboard',           '▣', url_for('dashboard.editor_dashboard'), 'dashboard'),
+        ('review', None, None, None),
+        ('Review Queue',        '\U0001F4E5', url_for('dashboard.editor_queue', queue='review-queue'), 'review-queue'),
+        ('In Review',           '\U0001F50D', url_for('dashboard.editor_queue', queue='in-review'), 'in-review'),
+        ('Revision',            '✎', url_for('dashboard.editor_queue', queue='revision'), 'revision'),
+        ('Ready for Production','✔', url_for('dashboard.editor_queue', queue='ready'), 'ready'),
+        ('lainnya', None, None, None),
+        ('History',             '\U0001F551', url_for('dashboard.history'), 'history'),
+        ('Notifications',       '\U0001F514', url_for('dashboard.notifications'), 'notifications'),
+        ('Profile',             '\U0001F464', url_for('dashboard.profile'), 'profile')
+    ],
+    'PRODUCTION': [
+        ('main', None, None, None),
+        ('Dashboard',        '▣', url_for('dashboard.production_dashboard'), 'dashboard'),
+        ('produksi', None, None, None),
+        ('Production Queue', '\U0001F4E5', url_for('dashboard.production_queue', queue='queue'), 'queue'),
+        ('In Production',    '\U0001F5A8', url_for('dashboard.production_queue', queue='in-production'), 'in-production'),
+        ('Quality Check',    '\U0001F50E', url_for('dashboard.production_queue', queue='quality-check'), 'quality-check'),
+        ('Completed',        '✔', url_for('dashboard.production_queue', queue='completed'), 'completed'),
+        ('lainnya', None, None, None),
+        ('History',          '\U0001F551', url_for('dashboard.history'), 'history'),
+        ('Notifications',    '\U0001F514', url_for('dashboard.notifications'), 'notifications'),
+        ('Profile',          '\U0001F464', url_for('dashboard.profile'), 'profile')
+    ]
+} %}
+
+{% block body %}
+<div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-head">
+            <a class="brand" href="{{ url_for('auth.dashboard_redirect') }}">
+                <span class="brand-mark" aria-hidden="true">&#128216;</span>
+                <span>{{ APP_NAME }}</span>
+            </a>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Menu utama">
+            {% for label, icon, href, key in NAV[role] %}
+                {% if href is none %}
+                    <div class="nav-section">{{ label }}</div>
+                {% else %}
+                    <a href="{{ href }}" class="{{ 'active' if active == key }}">
+                        <span class="nav-icon" aria-hidden="true">{{ icon }}</span>
+                        <span class="nav-text">{{ label }}</span>
+                        {% if key == 'notifications' and unread_count %}
+                            <span class="badge-count nav-badge">{{ unread_count }}</span>
+                        {% endif %}
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </nav>
+
+        <div class="sidebar-foot">
+            <a href="{{ url_for('dashboard.profile') }}" class="nav-link" style="display:flex;align-items:center;gap:.7rem;padding:.58rem .75rem;border-radius:6px;color:#c7d3e6;font-size:.88rem;text-decoration:none">
+                <span class="nav-icon" aria-hidden="true">&#9881;</span>
+                <span class="nav-text">Settings</span>
+            </a>
+            <form method="post" action="{{ url_for('auth.logout') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">&#128682;</span>
+                    <span class="nav-text">Logout</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+    <div class="sidebar-scrim"></div>
+
+    <div class="main">
+        <header class="topbar">
+            <button class="icon-btn" id="sidebar-toggle" type="button" aria-label="Toggle sidebar">&#9776;</button>
+            <div>
+                <div class="page-title">{{ page_title }}</div>
+                <div class="breadcrumb">{{ role | title }} / {{ page_title }}</div>
+            </div>
+            <div class="spacer"></div>
+
+            <div class="dropdown">
+                <button class="icon-btn" type="button" data-dropdown="notif-menu"
+                        data-onopen="loadNotifDropdown" aria-label="Notifikasi">
+                    &#128276;
+                    <span class="badge-count {{ 'hidden' if not unread_count }}" id="notif-badge">{{ unread_count }}</span>
+                </button>
+                <div class="dropdown-menu notif-menu hidden" id="notif-menu">
+                    <div class="dd-head">
+                        <strong>Notifikasi</strong>
+                        <button type="button" class="btn btn-sm btn-ghost" id="notif-read-all">Tandai semua dibaca</button>
+                    </div>
+                    <div id="notif-list"><div class="loading-state small">Loading...</div></div>
+                    <a href="{{ url_for('dashboard.notifications') }}" class="text-center small">Lihat semua</a>
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <button class="user-chip" type="button" data-dropdown="profile-menu">
+                    <span class="avatar">{{ current_user.full_name[:1] | upper }}</span>
+                    <span class="who">
+                        {{ current_user.full_name }}
+                        <small>{{ role | title }}</small>
+                    </span>
+                    <span aria-hidden="true">&#9662;</span>
+                </button>
+                <div class="dropdown-menu hidden" id="profile-menu">
+                    <div class="dd-head">
+                        <strong>{{ current_user.full_name }}</strong>
+                    </div>
+                    <a href="{{ url_for('dashboard.profile') }}">My Profile</a>
+                    <a href="{{ url_for('dashboard.profile') }}#account">Account</a>
+                    <form method="post" action="{{ url_for('auth.logout') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* Top-bar notification dropdown. Shared by every dashboard page. */
+window.loadNotifDropdown = function () {
+    var list = document.getElementById("notif-list");
+    list.innerHTML = '<div class="loading-state small"><span class="spinner"></span>Loading...</div>';
+    App.api.get("/api/notifications?per_page=8").then(function (res) {
+        var items = res.data.items;
+        if (!items.length) {
+            list.innerHTML = '<div class="empty-state small">Belum ada notifikasi.</div>';
+        } else {
+            list.innerHTML = items.map(function (n) {
+                return '<a class="notif-item ' + (n.is_read ? "" : "unread") + '" href="' +
+                    (n.request_id ? "/requests/" + n.request_id : "/notifications") +
+                    '" data-notif="' + n.id + '">' +
+                    '<span class="notif-title">' + App.esc(n.title) + "</span>" +
+                    '<span class="notif-msg">' + App.esc(n.message) + "</span>" +
+                    '<span class="notif-time">' + App.esc(n.created_at) + "</span></a>";
+            }).join("");
+            App.qsa("[data-notif]", list).forEach(function (node) {
+                node.addEventListener("click", function () {
+                    App.api.post("/api/notifications/" + node.dataset.notif + "/read");
+                });
+            });
+        }
+        updateBadge(res.data.unread);
+    }).catch(function () {
+        list.innerHTML = '<div class="empty-state small">Data gagal dimuat.</div>';
+    });
+};
+
+function updateBadge(count) {
+    var badge = document.getElementById("notif-badge");
+    if (!badge) { return; }
+    badge.textContent = count;
+    badge.classList.toggle("hidden", !count);
+}
+window.updateNotifBadge = updateBadge;
+
+document.addEventListener("DOMContentLoaded", function () {
+    var readAll = document.getElementById("notif-read-all");
+    if (readAll) {
+        readAll.addEventListener("click", function () {
+            App.api.post("/api/notifications/read-all").then(function () {
+                updateBadge(0);
+                window.loadNotifDropdown();
+                App.toast("Semua notifikasi ditandai dibaca.", "success");
+            }).catch(App.error);
+        });
+    }
+});
+</script>
+{% block page_scripts %}{% endblock %}
+{% endblock %}

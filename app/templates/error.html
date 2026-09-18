@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Error {{ code }} - {{ APP_NAME }}{% endblock %}
+
+{% block body %}
+<div class="auth-wrap" style="min-height:100vh">
+    <div class="auth-card text-center">
+        <div style="font-size:2.6rem;font-weight:700;color:var(--primary)">{{ code }}</div>
+        <h1>{{ {400:'Permintaan Tidak Valid',401:'Perlu Login',403:'Akses Ditolak',404:'Halaman Tidak Ditemukan',409:'Konflik Data',413:'File Terlalu Besar',422:'Data Tidak Valid'}.get(code, 'Terjadi Kesalahan') }}</h1>
+        <p>{{ message }}</p>
+        <div class="btn-group" style="justify-content:center">
+            <a class="btn" href="{{ url_for('public.home') }}">Kembali ke Home</a>
+            {% if current_user %}<a class="btn btn-outline" href="{{ url_for('auth.dashboard_redirect') }}">Dashboard</a>{% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

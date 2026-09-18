@@ -1,0 +1,99 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Dashboard</h1>
+        <p>Ringkasan pengajuan buku Anda.</p>
+    </div>
+    <div class="btn-group">
+        <a class="btn" href="{{ url_for('dashboard.user_request_new') }}">+ Request Buku</a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    {{ ui.stat_card('Total Request', 'stat-total') }}
+    {{ ui.stat_card('Draft', 'stat-draft', 'is-muted') }}
+    {{ ui.stat_card('Pending', 'stat-pending', 'is-warning') }}
+    {{ ui.stat_card('Revision', 'stat-revision', 'is-danger') }}
+    {{ ui.stat_card('In Progress', 'stat-progress') }}
+    {{ ui.stat_card('Completed', 'stat-completed', 'is-success') }}
+</div>
+
+<div class="detail-grid">
+    <div class="card">
+        <div class="card-head">
+            <h2>Request Terbaru</h2>
+            <a class="btn btn-sm btn-outline" href="{{ url_for('dashboard.user_requests') }}">Lihat semua</a>
+        </div>
+        {{ ui.data_table('recent', [
+            {'label': 'Kode'}, {'label': 'Judul'}, {'label': 'Jenis'},
+            {'label': 'Status'}, {'label': 'Diperbarui'}
+        ]) }}
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2>Aktivitas Terakhir</h2></div>
+        <div class="card-body" id="activity">
+            <div class="loading-state"><span class="spinner"></span>Loading...</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script>
+(function () {
+    App.api.get("/api/stats").then(function (res) {
+        var c = res.data.cards;
+        document.getElementById("stat-total").textContent = c.total;
+        document.getElementById("stat-draft").textContent = c.draft;
+        document.getElementById("stat-pending").textContent = c.pending;
+        document.getElementById("stat-revision").textContent = c.revision;
+        document.getElementById("stat-progress").textContent = c.in_progress;
+        document.getElementById("stat-completed").textContent = c.completed;
+    }).catch(function () {
+        App.qsa(".stat-value").forEach(function (n) { n.textContent = "!"; });
+        App.toast("Statistik gagal dimuat.", "danger");
+    });
+
+    new ListTable({
+        endpoint: "/api/requests",
+        tableId: "recent",
+        columns: 5,
+        perPage: 5,
+        emptyMessage: "Belum ada request. Mulai dengan menekan tombol Request Buku.",
+        renderRow: function (item) {
+            return "<tr>" +
+                '<td><a href="/requests/' + item.id + '">' + App.esc(item.request_code) + "</a></td>" +
+                "<td>" + App.esc(item.title) + "</td>" +
+                "<td>" + App.esc(App.dash(item.book_type)) + "</td>" +
+                "<td>" + App.statusBadge(item.status) + "</td>" +
+                '<td class="nowrap small">' + App.esc(item.updated_at) + "</td></tr>";
+        }
+    });
+
+    var activity = document.getElementById("activity");
+    App.api.get("/api/history?per_page=8").then(function (res) {
+        var items = res.data.items;
+        if (!items.length) {
+            activity.innerHTML = '<div class="empty-state">Belum ada aktivitas.</div>';
+            return;
+        }
+        activity.innerHTML = '<ul class="timeline">' + items.map(function (h) {
+            return "<li>" +
+                '<div class="tl-time">' + App.esc(h.created_at) + "</div>" +
+                '<div class="tl-title">' + App.esc(h.request_code || "") + " " +
+                App.statusBadge(h.new_status) + "</div>" +
+                '<div class="small muted">' + App.esc(h.actor) + "</div>" +
+                (h.note ? '<div class="tl-note">' + App.esc(h.note) + "</div>" : "") +
+                "</li>";
+        }).join("") + "</ul>";
+    }).catch(function () {
+        activity.innerHTML = '<div class="empty-state">Data gagal dimuat.</div>';
+    });
+}());
+</script>
+{% endblock %}

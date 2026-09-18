@@ -1,0 +1,127 @@
+{# Reusable UI macros. Import with: {% import "components.html" as ui %} #}
+
+{% macro status_badge(status, labels, tones) -%}
+<span class="badge badge-{{ tones.get(status, 'muted') }}">{{ labels.get(status, status) }}</span>
+{%- endmacro %}
+
+{% macro page_head(title, subtitle=None) %}
+<div class="page-head">
+    <div>
+        <h1>{{ title }}</h1>
+        {% if subtitle %}<p>{{ subtitle }}</p>{% endif %}
+    </div>
+    <div class="btn-group">{{ caller() if caller is defined }}</div>
+</div>
+{% endmacro %}
+
+{% macro stat_card(label, id, tone='') %}
+<div class="stat-card {{ tone }}">
+    <div class="stat-label">{{ label }}</div>
+    <div class="stat-value" id="{{ id }}">-</div>
+</div>
+{% endmacro %}
+
+{% macro data_table(id, columns, colspan=None) %}
+<div class="table-wrap">
+    <table class="data" id="{{ id }}">
+        <thead>
+        <tr>
+            {% for col in columns %}
+                {% if col.sort %}
+                    <th class="sortable" data-sort="{{ col.sort }}">{{ col.label }}</th>
+                {% else %}
+                    <th class="{{ col.class or '' }}">{{ col.label }}</th>
+                {% endif %}
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody id="{{ id }}-body">
+        <tr class="state-row"><td colspan="{{ colspan or columns | length }}">
+            <span class="spinner"></span> Loading...
+        </td></tr>
+        </tbody>
+    </table>
+</div>
+<div class="pagination" id="{{ id }}-pagination"></div>
+{% endmacro %}
+
+{% macro status_filter(statuses, labels, id='filter-status') %}
+<div class="field">
+    <label for="{{ id }}">Status</label>
+    <select id="{{ id }}">
+        <option value="">Semua status</option>
+        {% for status in statuses %}
+        <option value="{{ status }}">{{ labels.get(status, status) }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endmacro %}
+
+{% macro book_type_filter(book_types, id='filter-type') %}
+<div class="field">
+    <label for="{{ id }}">Jenis Buku</label>
+    <select id="{{ id }}">
+        <option value="">Semua jenis</option>
+        {% for type in book_types %}
+        <option value="{{ type.id }}">{{ type.name }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endmacro %}
+
+{% macro search_field(id='filter-q', placeholder='Cari kode, judul, atau nama user...') %}
+<div class="field grow">
+    <label for="{{ id }}">Cari</label>
+    <input type="search" id="{{ id }}" placeholder="{{ placeholder }}">
+</div>
+{% endmacro %}
+
+{% macro date_range(from_id='filter-from', to_id='filter-to') %}
+<div class="field">
+    <label for="{{ from_id }}">Dari Tanggal</label>
+    <input type="date" id="{{ from_id }}">
+</div>
+<div class="field">
+    <label for="{{ to_id }}">Sampai Tanggal</label>
+    <input type="date" id="{{ to_id }}">
+</div>
+{% endmacro %}
+
+{% macro form_input(name, label, type='text', required=False, value='', placeholder='', help=None) %}
+<div class="field">
+    <label for="{{ name }}">{{ label }}{% if required %} <span class="required">*</span>{% endif %}</label>
+    <input type="{{ type }}" id="{{ name }}" name="{{ name }}" value="{{ value }}"
+           placeholder="{{ placeholder }}"{% if required %} required{% endif %}>
+    {% if help %}<div class="small muted mt-1">{{ help }}</div>{% endif %}
+    <div class="field-error hidden" data-error-for="{{ name }}"></div>
+</div>
+{% endmacro %}
+
+{% macro form_textarea(name, label, required=False, placeholder='', rows=4) %}
+<div class="field">
+    <label for="{{ name }}">{{ label }}{% if required %} <span class="required">*</span>{% endif %}</label>
+    <textarea id="{{ name }}" name="{{ name }}" rows="{{ rows }}"
+              placeholder="{{ placeholder }}"{% if required %} required{% endif %}></textarea>
+    <div class="field-error hidden" data-error-for="{{ name }}"></div>
+</div>
+{% endmacro %}
+
+{% macro form_select(name, label, options, required=False, empty='-- Pilih --') %}
+<div class="field">
+    <label for="{{ name }}">{{ label }}{% if required %} <span class="required">*</span>{% endif %}</label>
+    <select id="{{ name }}" name="{{ name }}"{% if required %} required{% endif %}>
+        <option value="">{{ empty }}</option>
+        {% for value, text in options %}
+        <option value="{{ value }}">{{ text }}</option>
+        {% endfor %}
+    </select>
+    <div class="field-error hidden" data-error-for="{{ name }}"></div>
+</div>
+{% endmacro %}
+
+{% macro empty_state(message='Belum ada data.', icon='📄') %}
+<div class="empty-state">
+    <span class="empty-icon" aria-hidden="true">{{ icon }}</span>
+    {{ message }}
+</div>
+{% endmacro %}

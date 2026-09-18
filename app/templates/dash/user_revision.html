@@ -1,0 +1,85 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Revision</h1>
+        <p>Request yang dikembalikan Editor dan menunggu perbaikan dari Anda.</p>
+    </div>
+</div>
+
+<div class="card">
+    {{ ui.data_table('revisions', [
+        {'label': 'Kode'}, {'label': 'Judul'}, {'label': 'Revisi ke'},
+        {'label': 'Status'}, {'label': 'Diperbarui'}, {'label': '', 'class': 'text-right'}
+    ]) }}
+</div>
+
+<div class="card">
+    <div class="card-head"><h2>Catatan Editor Terbuka</h2></div>
+    <div class="card-body" id="notes">
+        <div class="loading-state"><span class="spinner"></span>Loading...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script>
+(function () {
+    var notes = document.getElementById("notes");
+
+    new ListTable({
+        endpoint: "/api/requests",
+        tableId: "revisions",
+        columns: 6,
+        params: { status: ["REVISION_REQUIRED", "USER_REVISION"] },
+        emptyMessage: "Tidak ada request yang perlu direvisi. ",
+        renderRow: function (item) {
+            return "<tr>" +
+                '<td><a href="/requests/' + item.id + '">' + App.esc(item.request_code) + "</a></td>" +
+                "<td>" + App.esc(item.title) + "</td>" +
+                "<td>" + item.revision_count + "</td>" +
+                "<td>" + App.statusBadge(item.status) + "</td>" +
+                '<td class="nowrap small">' + App.esc(item.updated_at) + "</td>" +
+                '<td class="actions"><a class="btn btn-sm btn-warning" href="/requests/' +
+                item.id + '">Perbaiki</a></td></tr>';
+        },
+        onLoaded: function (items) {
+            if (!items.length) {
+                notes.innerHTML = '<div class="empty-state">Tidak ada catatan revisi terbuka.</div>';
+                return;
+            }
+            notes.innerHTML = '<div class="loading-state"><span class="spinner"></span>Loading...</div>';
+            Promise.all(items.map(function (item) {
+                return App.api.get("/api/requests/" + item.id).then(function (res) {
+                    return res.data.request;
+                }).catch(function () { return null; });
+            })).then(function (details) {
+                var html = "";
+                details.filter(Boolean).forEach(function (req) {
+                    (req.revisions || []).filter(function (rev) {
+                        return !rev.resolved_at;
+                    }).forEach(function (rev) {
+                        html += '<div class="revision-item">' +
+                            '<div class="rev-head"><strong>' + App.esc(req.request_code) +
+                            " &middot; Revision #" + rev.revision_number + "</strong>" +
+                            '<a class="btn btn-sm" href="/requests/' + req.id +
+                            '">Perbaiki</a></div>' +
+                            '<div class="rev-body"><span class="label">Catatan Editor' +
+                            (rev.requested_by ? " (" + App.esc(rev.requested_by) + ")" : "") +
+                            '</span><div style="white-space:pre-wrap">' +
+                            App.esc(rev.editor_note) + "</div></div>" +
+                            '<div class="small muted mt-1">' + App.esc(rev.created_at) +
+                            "</div></div>";
+                    });
+                });
+                notes.innerHTML = html ||
+                    '<div class="empty-state">Tidak ada catatan revisi terbuka.</div>';
+            });
+        }
+    });
+}());
+</script>
+{% endblock %}

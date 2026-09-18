@@ -1,0 +1,42 @@
+{% extends "public_base.html" %}
+{% block title %}Tentang - {{ APP_NAME }}{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding:3rem 0 2.5rem">
+    <div class="container">
+        <span class="eyebrow">Tentang</span>
+        <h1>Tentang {{ APP_NAME }}</h1>
+        <p class="lead">
+            Aplikasi operasional internal untuk mengelola siklus hidup pembuatan buku,
+            dari pengajuan oleh user sampai buku selesai diproduksi.
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="feature-grid">
+            <article class="feature-card">
+                <h3>Satu alur, empat peran</h3>
+                <p>User mengajukan, Admin menyetujui, Editor memeriksa, dan tim Produksi
+                   mengerjakan pencetakan. Setiap peran memiliki hak akses sendiri.</p>
+            </article>
+            <article class="feature-card">
+                <h3>Status yang terkontrol</h3>
+                <p>Perpindahan status divalidasi backend, sehingga tahapan tidak dapat
+                   dilompati atau diubah oleh peran yang tidak berwenang.</p>
+            </article>
+            <article class="feature-card">
+                <h3>Revisi tercatat</h3>
+                <p>Setiap catatan editor dan tanggapan user disimpan sebagai riwayat
+                   revisi terpisah, bukan menimpa data lama.</p>
+            </article>
+            <article class="feature-card">
+                <h3>Jejak audit</h3>
+                <p>Login, perubahan request, upload file, approval, hingga penyelesaian
+                   produksi dicatat pada audit log.</p>
+            </article>
+        </div>
+    </div>
+</section>
+{% endblock %}

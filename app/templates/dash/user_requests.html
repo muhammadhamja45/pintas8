@@ -1,0 +1,63 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Request Saya</h1>
+        <p>Seluruh pengajuan buku yang Anda buat.</p>
+    </div>
+    <div class="btn-group">
+        <a class="btn" href="{{ url_for('dashboard.user_request_new') }}">+ Request Buku</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="toolbar">
+        {{ ui.search_field('filter-q', 'Cari kode atau judul buku...') }}
+        {{ ui.status_filter(ALL_STATUSES, STATUS_LABELS) }}
+        {{ ui.book_type_filter(book_types) }}
+        {{ ui.date_range() }}
+    </div>
+    {{ ui.data_table('requests', [
+        {'label': 'Kode', 'sort': 'request_code'},
+        {'label': 'Judul', 'sort': 'title'},
+        {'label': 'Jenis'},
+        {'label': 'Anggota'},
+        {'label': 'Deadline', 'sort': 'deadline'},
+        {'label': 'Status', 'sort': 'status'},
+        {'label': 'Diperbarui', 'sort': 'updated_at'},
+        {'label': '', 'class': 'text-right'}
+    ]) }}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script>
+(function () {
+    new ListTable({
+        endpoint: "/api/requests",
+        tableId: "requests",
+        columns: 8,
+        filters: {
+            "filter-q": "q", "filter-status": "status", "filter-type": "book_type_id",
+            "filter-from": "date_from", "filter-to": "date_to"
+        },
+        emptyMessage: "Belum ada request yang sesuai filter.",
+        renderRow: function (item) {
+            return "<tr>" +
+                '<td><a href="/requests/' + item.id + '">' + App.esc(item.request_code) + "</a></td>" +
+                "<td>" + App.esc(item.title) + "</td>" +
+                "<td>" + App.esc(App.dash(item.book_type)) + "</td>" +
+                "<td>" + item.member_count + "</td>" +
+                '<td class="nowrap">' + App.esc(App.dash(item.deadline)) + "</td>" +
+                "<td>" + App.statusBadge(item.status) + "</td>" +
+                '<td class="nowrap small">' + App.esc(item.updated_at) + "</td>" +
+                '<td class="actions"><a class="btn btn-sm btn-outline" href="/requests/' +
+                item.id + '">Detail</a></td></tr>';
+        }
+    });
+}());
+</script>
+{% endblock %}

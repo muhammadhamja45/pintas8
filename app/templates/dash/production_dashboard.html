@@ -1,0 +1,68 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Dashboard</h1>
+        <p>Status pekerjaan produksi buku.</p>
+    </div>
+    <div class="btn-group">
+        <a class="btn" href="{{ url_for('dashboard.production_queue', queue='queue') }}">Production Queue</a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    {{ ui.stat_card('Waiting', 'stat-waiting', 'is-warning') }}
+    {{ ui.stat_card('In Production', 'stat-inprod') }}
+    {{ ui.stat_card('Quality Check', 'stat-qc') }}
+    {{ ui.stat_card('Completed', 'stat-completed', 'is-success') }}
+</div>
+
+<div class="card">
+    <div class="card-head"><h2>Pekerjaan Aktif</h2></div>
+    {{ ui.data_table('orders', [
+        {'label': 'Order'}, {'label': 'Buku'}, {'label': 'Jumlah Cetak'},
+        {'label': 'Status'}, {'label': ''}
+    ]) }}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script>
+(function () {
+    App.api.get("/api/stats").then(function (res) {
+        var c = res.data.cards;
+        document.getElementById("stat-waiting").textContent = c.waiting;
+        document.getElementById("stat-inprod").textContent = c.in_production;
+        document.getElementById("stat-qc").textContent = c.quality_check;
+        document.getElementById("stat-completed").textContent = c.completed;
+    }).catch(function () { App.toast("Statistik gagal dimuat.", "danger"); });
+
+    new ListTable({
+        endpoint: "/api/production/orders",
+        tableId: "orders",
+        columns: 5,
+        perPage: 10,
+        params: { status: ["WAITING", "IN_PRODUCTION", "QUALITY_CHECK"] },
+        emptyMessage: "Tidak ada pekerjaan produksi aktif.",
+        renderRow: function (order) {
+            var req = order.request || {};
+            return "<tr>" +
+                '<td><a href="/production/orders/' + order.id + '">' +
+                App.esc(order.order_code) + "</a></td>" +
+                "<td>" + App.esc(req.title) + '<div class="small muted">' +
+                App.esc(req.request_code) + "</div></td>" +
+                "<td>" + App.esc(App.dash(req.print_quantity)) + "</td>" +
+                '<td><span class="badge badge-' +
+                ({ WAITING: "warning", IN_PRODUCTION: "info", QUALITY_CHECK: "info",
+                   COMPLETED: "success" }[order.status] || "muted") + '">' +
+                App.esc(order.status.replace(/_/g, " ")) + "</span></td>" +
+                '<td class="actions"><a class="btn btn-sm" href="/production/orders/' +
+                order.id + '">Detail</a></td></tr>';
+        }
+    });
+}());
+</script>
+{% endblock %}

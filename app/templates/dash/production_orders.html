@@ -1,0 +1,68 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>{{ page_title }}</h1>
+        <p>
+            {% if active == 'queue' %}Order yang menunggu untuk dikerjakan.
+            {% elif active == 'in-production' %}Order yang sedang dalam proses pencetakan.
+            {% elif active == 'quality-check' %}Order yang sedang diperiksa kualitasnya.
+            {% else %}Order yang telah selesai diproduksi.{% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="toolbar">
+        {{ ui.search_field('filter-q', 'Cari kode order, kode request, atau judul...') }}
+    </div>
+    {{ ui.data_table('orders', [
+        {'label': 'Order'},
+        {'label': 'Buku'},
+        {'label': 'Jumlah Cetak'},
+        {'label': 'Ukuran'},
+        {'label': 'Kertas'},
+        {'label': 'Finishing'},
+        {'label': 'Status'},
+        {'label': '', 'class': 'text-right'}
+    ]) }}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script>
+(function () {
+    var TONES = { WAITING: "warning", IN_PRODUCTION: "info", QUALITY_CHECK: "info",
+                  COMPLETED: "success" };
+
+    new ListTable({
+        endpoint: "/api/production/orders",
+        tableId: "orders",
+        columns: 8,
+        params: { status: {{ statuses | tojson }} },
+        filters: { "filter-q": "q" },
+        emptyMessage: "Tidak ada order pada antrean ini.",
+        renderRow: function (order) {
+            var req = order.request || {};
+            return "<tr>" +
+                '<td><a href="/production/orders/' + order.id + '">' +
+                App.esc(order.order_code) + "</a></td>" +
+                "<td>" + App.esc(req.title) + '<div class="small muted">' +
+                App.esc(req.request_code) + " &middot; " + App.esc(App.dash(req.owner)) +
+                "</div></td>" +
+                "<td>" + App.esc(App.dash(req.print_quantity)) + "</td>" +
+                "<td>" + App.esc(App.dash(req.book_size)) + "</td>" +
+                "<td>" + App.esc(App.dash(req.paper_type)) + "</td>" +
+                "<td>" + App.esc(App.dash(req.finishing)) + "</td>" +
+                '<td><span class="badge badge-' + (TONES[order.status] || "muted") + '">' +
+                App.esc(order.status.replace(/_/g, " ")) + "</span></td>" +
+                '<td class="actions"><a class="btn btn-sm" href="/production/orders/' +
+                order.id + '">Detail</a></td></tr>';
+        }
+    });
+}());
+</script>
+{% endblock %}

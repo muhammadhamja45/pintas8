@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block body %}
+<header class="public-nav">
+    <div class="container nav-inner">
+        <a class="brand" href="{{ url_for('public.home') }}">
+            <span class="brand-mark" aria-hidden="true">&#128216;</span>
+            <span>{{ APP_NAME }}</span>
+        </a>
+
+        <button class="nav-toggle" type="button" aria-label="Buka menu" aria-expanded="false">&#9776;</button>
+
+        <ul class="nav-links">
+            <li><a href="{{ url_for('public.home') }}" class="{{ 'active' if page == 'home' }}">Home</a></li>
+            <li><a href="{{ url_for('public.about') }}" class="{{ 'active' if page == 'about' }}">Tentang</a></li>
+            <li><a href="{{ url_for('public.workflow_page') }}" class="{{ 'active' if page == 'workflow' }}">Alur Proses</a></li>
+            <li><a href="{{ url_for('public.features') }}" class="{{ 'active' if page == 'features' }}">Fitur</a></li>
+            {% if current_user %}
+                <li class="nav-actions">
+                    <a class="btn btn-sm" href="{{ url_for('auth.dashboard_redirect') }}">Dashboard</a>
+                    <form method="post" action="{{ url_for('auth.logout') }}" style="margin:0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline" type="submit">Logout</button>
+                    </form>
+                </li>
+            {% else %}
+                <li class="nav-actions">
+                    <a class="btn btn-sm" href="{{ url_for('auth.login') }}">Login</a>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+</header>
+
+{% block content %}{% endblock %}
+
+<footer class="public-footer">
+    <div class="container">
+        <strong style="color:#fff">{{ APP_NAME }}</strong>
+        <p style="color:#a9b6cc;margin:.35rem 0 0">
+            Sistem manajemen pengajuan, approval, pemeriksaan editor, revisi, dan produksi buku.
+        </p>
+    </div>
+</footer>
+{% endblock %}

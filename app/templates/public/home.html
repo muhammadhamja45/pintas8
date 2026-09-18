@@ -1,0 +1,171 @@
+{% extends "public_base.html" %}
+{% block title %}{{ APP_NAME }} - Manajemen Pengajuan dan Produksi Buku{% endblock %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <span class="eyebrow">Book 2 Management</span>
+        <h1>Kelola Pengajuan dan Produksi Buku dalam Satu Sistem Terintegrasi.</h1>
+        <p class="lead">
+            Mulai dari request, approval, pemeriksaan editor, revisi, hingga proses
+            produksi buku. Setiap tahap tercatat lengkap dengan status, catatan,
+            notifikasi, dan riwayat.
+        </p>
+        <div class="btn-group">
+            <a class="btn" href="{% if current_user and current_user.role_name == 'USER' %}{{ url_for('dashboard.user_request_new') }}{% elif current_user %}{{ url_for('auth.dashboard_redirect') }}{% else %}{{ url_for('auth.login') }}{% endif %}">Ajukan Buku</a>
+            <a class="btn btn-outline" href="{{ url_for('public.workflow_page') }}">Lihat Alur</a>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <h2>Alur Proses</h2>
+            <p>Enam tahap yang dilalui setiap pengajuan buku, dari request sampai selesai.</p>
+        </div>
+        <div class="step-grid">
+            {% for num, name, desc in steps %}
+            <article class="step-card">
+                <span class="step-num">{{ num }}</span>
+                <h3>{{ name }}</h3>
+                <p>{{ desc }}</p>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section alt">
+    <div class="container">
+        <div class="section-head">
+            <h2>Fitur</h2>
+            <p>Fungsi operasional yang dipakai user, admin, editor, dan tim produksi setiap hari.</p>
+        </div>
+        <div class="feature-grid">
+            {% for name, desc in features %}
+            <article class="feature-card">
+                <h3>{{ name }}</h3>
+                <p>{{ desc }}</p>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% if user_books %}
+<section class="section" id="buku-user">
+    <div class="container">
+        <div class="section-head">
+            <h2>Buku dari User</h2>
+            <p>Buku yang dibagikan secara public oleh pengaju, dapat dibaca langsung sebagai flipbook.</p>
+        </div>
+        <div class="catalog-grid">
+            {% for book in user_books %}
+            <button type="button" class="catalog-card" style="text-align:left"
+                    data-open-flip data-url="{{ url_for('public.public_book_pdf', request_id=book.id) }}"
+                    data-title="{{ book.title }}">
+                <div class="catalog-cover">
+                    {% if book.cover_file %}
+                    <img src="{{ url_for('public.public_book_cover', request_id=book.id) }}" alt="{{ book.title }}" loading="lazy">
+                    {% else %}
+                    <div class="thumb">&#128216;</div>
+                    {% endif %}
+                </div>
+                <div class="catalog-body">
+                    <span class="catalog-category">{{ book.book_type.name }}</span>
+                    <h3>{{ book.title }}</h3>
+                    <p>Oleh {{ book.owner.full_name }}</p>
+                </div>
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if catalog.total %}
+<section class="section alt" id="katalog">
+    <div class="container">
+        <div class="section-head">
+            <h2>Katalog Buku Terbit</h2>
+            <p>Buku-buku yang telah selesai diproduksi dan diterbitkan.</p>
+        </div>
+        <div class="catalog-grid">
+            {% for book in catalog.items %}
+            <a class="catalog-card" href="{{ book.source_url }}" target="_blank" rel="noopener">
+                <div class="catalog-cover">
+                    <img src="{{ book.cover_image_url }}" alt="{{ book.title }}" loading="lazy">
+                </div>
+                <div class="catalog-body">
+                    <span class="catalog-category">{{ book.category }}</span>
+                    <h3>{{ book.title }}</h3>
+                    <p>{{ book.display_description }}</p>
+                    {% if book.page_count %}<span class="catalog-pages">{{ book.page_count }} halaman</span>{% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% if catalog.pages > 1 %}
+        <nav class="pagination catalog-pagination">
+            <span class="small muted">Halaman {{ catalog.page }} dari {{ catalog.pages }}</span>
+            <div class="pages">
+                {% if catalog.has_prev %}
+                <a href="{{ url_for('public.home', page=catalog.prev_num) }}#katalog">&lsaquo;</a>
+                {% else %}
+                <span class="disabled">&lsaquo;</span>
+                {% endif %}
+                {% for num in catalog.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if num %}
+                        <a href="{{ url_for('public.home', page=num) }}#katalog" class="{{ 'active' if num == catalog.page }}">{{ num }}</a>
+                    {% else %}
+                        <span class="ellipsis">&hellip;</span>
+                    {% endif %}
+                {% endfor %}
+                {% if catalog.has_next %}
+                <a href="{{ url_for('public.home', page=catalog.next_num) }}#katalog">&rsaquo;</a>
+                {% else %}
+                <span class="disabled">&rsaquo;</span>
+                {% endif %}
+            </div>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <h2>Jenis Buku yang Dilayani</h2>
+            <p>Kategori pengajuan yang tersedia saat ini dan dikelola oleh admin.</p>
+        </div>
+        <div class="feature-grid">
+            {% for type in book_types %}
+            <article class="feature-card">
+                <h3>{{ type.name }}</h3>
+                <p>{{ type.description or 'Kategori pengajuan buku.' }}</p>
+            </article>
+            {% else %}
+            <p class="muted">Belum ada jenis buku aktif.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+<script src="{{ url_for('static', filename='js/flipbook.js') }}"></script>
+<script>
+document.querySelectorAll("[data-open-flip]").forEach(function (button) {
+    button.addEventListener("click", function () {
+        App.openFlipbook(button.dataset.url, button.dataset.title);
+    });
+});
+</script>
+{% endblock %}

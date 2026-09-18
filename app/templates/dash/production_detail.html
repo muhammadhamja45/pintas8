@@ -1,0 +1,233 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+{% set req = order.request %}
+{% set role = current_user.role_name %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>{{ order.order_code }}</h1>
+        <p>{{ req.title }} &middot;
+            <span class="badge badge-{{ {'WAITING':'warning','IN_PRODUCTION':'info','QUALITY_CHECK':'info','COMPLETED':'success'}.get(order.status, 'muted') }}">
+                {{ order.status | replace('_', ' ') | title }}
+            </span>
+        </p>
+    </div>
+    <div class="btn-group">
+        <a class="btn btn-outline" href="{{ url_for('dashboard.request_detail', request_id=req.id) }}">Detail Buku</a>
+        {% if role == 'PRODUCTION' %}
+            {% if order.status == 'WAITING' %}
+                <button class="btn" id="btn-start">Start Production</button>
+            {% elif order.status == 'IN_PRODUCTION' %}
+                <button class="btn btn-sm btn-outline" id="btn-upload-final">Upload File Final</button>
+                <button class="btn" id="btn-qc">Quality Check</button>
+            {% elif order.status == 'QUALITY_CHECK' %}
+                <button class="btn btn-warning" id="btn-qc-fail">QC Gagal</button>
+                <button class="btn btn-success" id="btn-complete">Complete</button>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div>
+        <div class="card">
+            <div class="card-head"><h2>Spesifikasi Produksi</h2></div>
+            <div class="card-body">
+                <dl class="kv">
+                    <dt>Order Code</dt><dd>{{ order.order_code }}</dd>
+                    <dt>Request</dt><dd><a href="{{ url_for('dashboard.request_detail', request_id=req.id) }}">{{ req.request_code }}</a></dd>
+                    <dt>Judul Buku</dt><dd>{{ req.title }}</dd>
+                    <dt>Jenis Buku</dt><dd>{{ req.book_type.name }}</dd>
+                    <dt>Pengaju</dt><dd>{{ req.owner.full_name }}</dd>
+                    <dt>Jumlah Cetak</dt><dd>{{ req.print_quantity or '-' }}</dd>
+                    <dt>Ukuran Buku</dt><dd>{{ req.book_size or '-' }}</dd>
+                    <dt>Jenis Kertas</dt><dd>{{ req.paper_type or '-' }}</dd>
+                    <dt>Finishing</dt><dd>{{ req.finishing or '-' }}</dd>
+                    <dt>Instruksi Percetakan</dt><dd style="white-space:pre-wrap">{{ req.printing_note or '-' }}</dd>
+                    <dt>Catatan Order</dt><dd style="white-space:pre-wrap">{{ order.note or '-' }}</dd>
+                    <dt>Operator</dt><dd>{{ order.operator.full_name if order.operator else '-' }}</dd>
+                    <dt>Mulai Produksi</dt><dd>{{ order.started_at.strftime('%d %b %Y %H:%M') if order.started_at else '-' }}</dd>
+                    <dt>Quality Check</dt><dd>{{ order.qc_at.strftime('%d %b %Y %H:%M') if order.qc_at else '-' }}</dd>
+                    <dt>Selesai</dt><dd>{{ order.completed_at.strftime('%d %b %Y %H:%M') if order.completed_at else '-' }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h2>File Buku ({{ req.files | length }})</h2></div>
+            <div class="card-body">
+                {% if req.files %}
+                <div class="file-grid">
+                    {% for file in req.files %}
+                    <div class="file-card">
+                        <div class="thumb">
+                            {% if file.is_image %}
+                                <img src="{{ url_for('api_requests.download_file', file_id=file.id) }}" alt="{{ file.original_filename }}" loading="lazy">
+                            {% else %}&#128196;{% endif %}
+                        </div>
+                        <div class="meta">
+                            <span class="name">{{ file.original_filename }}</span>
+                            <span class="sub">{{ file.category | replace('_', ' ') | title }} &middot; {{ file.file_size | filesize }}</span>
+                        </div>
+                        <div class="acts">
+                            <a class="btn btn-sm btn-outline" href="{{ url_for('api_requests.download_file', file_id=file.id) }}?download=1">Unduh</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}{{ ui.empty_state('Belum ada file.') }}{% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h2>Editor Checklist</h2></div>
+            <div class="card-body">
+                {% if req.checklist %}
+                <div class="checklist-grid">
+                    {% for field, label in CHECKLIST_FIELDS %}
+                    <label class="check-row">
+                        <input type="checkbox" disabled {% if req.checklist[field] %}checked{% endif %}>
+                        <span>{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% if req.checklist.note %}
+                <div class="tl-note mt-3">{{ req.checklist.note }}</div>
+                {% endif %}
+                {% else %}{{ ui.empty_state('Checklist editor belum tersedia.') }}{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <div class="card-head"><h2>Riwayat Produksi</h2></div>
+            <div class="card-body">
+                {% if order.entries %}
+                <ul class="timeline">
+                    {% for entry in order.entries %}
+                    <li>
+                        <div class="tl-time">{{ entry.created_at.strftime('%d %b %Y %H:%M') }}</div>
+                        <div class="tl-title">{{ entry.action | replace('_', ' ') | title }}</div>
+                        <div class="small muted">
+                            {{ entry.actor.full_name if entry.actor else 'Sistem' }}
+                            {% if entry.new_status %}&middot; {{ entry.new_status | replace('_', ' ') | title }}{% endif %}
+                        </div>
+                        {% if entry.note %}<div class="tl-note">{{ entry.note }}</div>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}{{ ui.empty_state('Belum ada aktivitas produksi.') }}{% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h2>Timeline Request</h2></div>
+            <div class="card-body">
+                <ul class="timeline">
+                    {% for entry in req.history[:8] %}
+                    <li>
+                        <div class="tl-time">{{ entry.created_at.strftime('%d %b %Y %H:%M') }}</div>
+                        <div class="tl-title">{{ ui.status_badge(entry.new_status, STATUS_LABELS, STATUS_TONES) }}</div>
+                        <div class="small muted">{{ entry.actor.full_name if entry.actor else 'Sistem' }}</div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+    var ORDER_ID = {{ order.id }};
+    var REQ_ID = {{ req.id }};
+
+    function on(id, handler) {
+        var node = document.getElementById(id);
+        if (node) { node.addEventListener("click", handler); }
+    }
+    function act(button, url, body, message) {
+        App.busy(button, App.api.post(url, body).then(function () {
+            App.toast(message, "success");
+            setTimeout(function () { window.location.reload(); }, 500);
+        }).catch(App.error), "Memproses...");
+    }
+
+    on("btn-start", function (ev) {
+        App.confirm({
+            title: "Start Production",
+            message: "Order akan ditandai sedang dikerjakan dan user menerima notifikasi.",
+            confirmLabel: "Start", reason: true, reasonLabel: "Catatan (opsional)"
+        }).then(function (res) {
+            if (res) { act(ev.target, "/api/production/orders/" + ORDER_ID + "/start",
+                           { note: res.note }, "Produksi dimulai."); }
+        });
+    });
+
+    on("btn-qc", function (ev) {
+        App.confirm({
+            title: "Quality Check",
+            message: "Order berpindah ke tahap pemeriksaan kualitas.",
+            confirmLabel: "Lanjutkan", reason: true, reasonLabel: "Catatan (opsional)"
+        }).then(function (res) {
+            if (res) { act(ev.target, "/api/production/orders/" + ORDER_ID + "/quality-check",
+                           { note: res.note }, "Quality check dimulai."); }
+        });
+    });
+
+    on("btn-qc-fail", function (ev) {
+        App.confirm({
+            title: "Quality Check Gagal",
+            message: "Order dikembalikan ke proses produksi.",
+            confirmLabel: "Kembalikan", confirmClass: "btn-warning",
+            reason: true, reasonRequired: true, reasonLabel: "Alasan QC gagal"
+        }).then(function (res) {
+            if (res) { act(ev.target, "/api/production/orders/" + ORDER_ID + "/reject-qc",
+                           { note: res.note }, "Order dikembalikan ke produksi."); }
+        });
+    });
+
+    on("btn-complete", function (ev) {
+        App.confirm({
+            title: "Complete Production",
+            message: "Buku akan ditandai selesai. Tindakan ini menutup request.",
+            confirmLabel: "Complete", confirmClass: "btn-success",
+            reason: true, reasonLabel: "Catatan penyelesaian (opsional)"
+        }).then(function (res) {
+            if (res) { act(ev.target, "/api/production/orders/" + ORDER_ID + "/complete",
+                           { note: res.note }, "Produksi diselesaikan."); }
+        });
+    });
+
+    on("btn-upload-final", function () {
+        App.modal({
+            title: "Upload File Final",
+            content: '<div class="field"><label for="up-file">File hasil produksi</label>' +
+                     '<input type="file" id="up-file"></div>' +
+                     '<div class="small muted">Maksimal 50 MB.</div>',
+            buttons: [
+                { label: "Cancel", class: "btn-outline" },
+                { label: "Upload", class: "btn", onClick: function (close, box) {
+                    var file = box.querySelector("#up-file").files[0];
+                    if (!file) { App.toast("Pilih file terlebih dahulu.", "danger"); return; }
+                    var form = new FormData();
+                    form.append("file", file);
+                    form.append("category", "FINAL");
+                    App.busy(box.querySelector(".modal-foot .btn:last-child"),
+                        App.api.upload("/api/requests/" + REQ_ID + "/files", form)
+                            .then(function () {
+                                close();
+                                App.toast("File final diunggah.", "success");
+                                window.location.reload();
+                            }).catch(App.error), "Mengunggah...");
+                } }
+            ]
+        });
+    });
+}());
+</script>
+{% endblock %}

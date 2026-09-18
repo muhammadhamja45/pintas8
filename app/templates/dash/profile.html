@@ -1,0 +1,128 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Profile</h1>
+        <p>Data akun Anda pada {{ APP_NAME }}.</p>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div class="card" id="account">
+        <div class="card-head"><h2>Data Akun</h2></div>
+        <div class="card-body">
+            <div id="profile-alert" class="alert alert-danger hidden"></div>
+            <form id="profile-form" novalidate>
+                <div class="grid-2">
+                    <div class="field">
+                        <label for="full_name">Nama Lengkap <span class="required">*</span></label>
+                        <input type="text" id="full_name" value="{{ current_user.full_name }}">
+                        <div class="field-error hidden" data-error-for="full_name"></div>
+                    </div>
+                    <div class="field">
+                        <label for="email">Email <span class="required">*</span></label>
+                        <input type="email" id="email" value="{{ current_user.email }}">
+                        <div class="field-error hidden" data-error-for="email"></div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="field">
+                        <label for="phone">Telepon</label>
+                        <input type="text" id="phone" value="{{ current_user.phone or '' }}">
+                    </div>
+                    <div class="field">
+                        <label for="username-ro">Username</label>
+                        <input type="text" id="username-ro" value="{{ current_user.username }}" disabled>
+                        <div class="small muted mt-1">Username hanya dapat diubah Admin.</div>
+                    </div>
+                </div>
+
+                <h3 class="mt-3">Ubah Password</h3>
+                <p class="small muted">Kosongkan bila tidak ingin mengubah password.</p>
+                <div class="grid-2">
+                    <div class="field">
+                        <label for="current_password">Password Lama</label>
+                        <div class="password-wrap">
+                            <input type="password" id="current_password" autocomplete="current-password">
+                            <button type="button" class="password-toggle" data-target="current_password">Show</button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="new_password">Password Baru</label>
+                        <div class="password-wrap">
+                            <input type="password" id="new_password" autocomplete="new-password">
+                            <button type="button" class="password-toggle" data-target="new_password">Show</button>
+                        </div>
+                        <div class="small muted mt-1">Minimal 6 karakter.</div>
+                    </div>
+                </div>
+
+                <div class="btn-group mt-2">
+                    <button class="btn" type="submit" id="save-profile">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2>Informasi</h2></div>
+        <div class="card-body">
+            <dl class="kv" style="grid-template-columns:120px 1fr">
+                <dt>Role</dt><dd><span class="badge badge-info">{{ current_user.role_name }}</span></dd>
+                <dt>Status</dt>
+                <dd><span class="badge badge-{{ 'success' if current_user.is_active else 'muted' }}">
+                    {{ 'Aktif' if current_user.is_active else 'Nonaktif' }}</span></dd>
+                <dt>Login Terakhir</dt>
+                <dd>{{ current_user.last_login_at.strftime('%d %b %Y %H:%M') if current_user.last_login_at else '-' }}</dd>
+                <dt>Terdaftar</dt><dd>{{ current_user.created_at.strftime('%d %b %Y') }}</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+    var form = document.getElementById("profile-form");
+    var alertBox = document.getElementById("profile-alert");
+    var saveBtn = document.getElementById("save-profile");
+
+    form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        alertBox.classList.add("hidden");
+        App.qsa(".field-error", form).forEach(function (n) { n.classList.add("hidden"); });
+
+        var fullName = document.getElementById("full_name").value.trim();
+        var email = document.getElementById("email").value.trim();
+        if (!fullName || !email) {
+            alertBox.textContent = "Nama lengkap dan email wajib diisi.";
+            alertBox.classList.remove("hidden");
+            return;
+        }
+
+        var payload = {
+            full_name: fullName,
+            email: email,
+            phone: document.getElementById("phone").value.trim(),
+            current_password: document.getElementById("current_password").value,
+            new_password: document.getElementById("new_password").value
+        };
+
+        App.busy(saveBtn, App.api.put("/api/auth/me", payload).then(function () {
+            App.toast("Profil berhasil diperbarui.", "success");
+            document.getElementById("current_password").value = "";
+            document.getElementById("new_password").value = "";
+        }).catch(function (err) {
+            alertBox.innerHTML = App.esc(err.message) +
+                (err.errors && err.errors.length
+                    ? "<ul><li>" + err.errors.map(App.esc).join("</li><li>") + "</li></ul>"
+                    : "");
+            alertBox.classList.remove("hidden");
+        }), "Menyimpan...");
+    });
+}());
+</script>
+{% endblock %}

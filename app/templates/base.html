@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="{% block meta_description %}Book 2 Management - sistem manajemen pengajuan, approval, pemeriksaan editor, revisi, dan produksi buku.{% endblock %}">
+    <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%93%98</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+{% block body %}{% endblock %}
+<div id="toast-container"></div>
+<script>
+    window.STATUS_LABELS = {{ STATUS_LABELS | tojson }};
+    window.STATUS_TONES = {{ STATUS_TONES | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

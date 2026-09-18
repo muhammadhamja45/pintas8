@@ -1,0 +1,75 @@
+{% extends "dash_base.html" %}
+{% import "components.html" as ui %}
+
+{% set ACTIONS = ['LOGIN', 'LOGOUT', 'CREATE_REQUEST', 'UPDATE_REQUEST', 'UPLOAD_FILE',
+                  'DELETE_FILE', 'SUBMIT_REQUEST', 'APPROVE_REQUEST', 'REJECT_REQUEST',
+                  'RETURN_REQUEST', 'START_REVIEW', 'REQUEST_REVISION', 'SUBMIT_REVISION',
+                  'EDITOR_APPROVE', 'SEND_TO_PRODUCTION', 'START_PRODUCTION',
+                  'QUALITY_CHECK', 'COMPLETE_PRODUCTION', 'CANCEL_REQUEST',
+                  'CREATE_USER', 'UPDATE_USER', 'UPDATE_PROFILE', 'CREATE_BOOK_TYPE',
+                  'UPDATE_BOOK_TYPE'] %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Audit Log</h1>
+        <p>Catatan aktivitas pengguna pada sistem.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="toolbar">
+        {{ ui.search_field('filter-q', 'Cari keterangan aktivitas...') }}
+        <div class="field">
+            <label for="filter-action">Aktivitas</label>
+            <select id="filter-action">
+                <option value="">Semua aktivitas</option>
+                {% for action in ACTIONS %}
+                <option value="{{ action }}">{{ action | replace('_', ' ') | title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    {{ ui.data_table('audit', [
+        {'label': 'Waktu'}, {'label': 'Aktivitas'}, {'label': 'Oleh'},
+        {'label': 'Request'}, {'label': 'Perubahan Status'}, {'label': 'Keterangan'},
+        {'label': 'IP'}
+    ]) }}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script>
+(function () {
+    new ListTable({
+        endpoint: "/api/admin/audit-logs",
+        tableId: "audit",
+        columns: 7,
+        perPage: 20,
+        filters: { "filter-q": "q", "filter-action": "action" },
+        emptyMessage: "Belum ada aktivitas tercatat.",
+        renderRow: function (log) {
+            var change = "-";
+            if (log.old_status || log.new_status) {
+                change = (log.old_status ? App.statusBadge(log.old_status) : "") +
+                    (log.old_status && log.new_status ? " &rarr; " : "") +
+                    (log.new_status ? App.statusBadge(log.new_status) : "");
+            }
+            return "<tr>" +
+                '<td class="nowrap small">' + App.esc(log.created_at) + "</td>" +
+                '<td class="nowrap">' + App.esc(log.action.replace(/_/g, " ")) + "</td>" +
+                "<td>" + App.esc(log.actor) +
+                (log.actor_role ? '<div class="small muted">' + App.esc(log.actor_role) +
+                 "</div>" : "") + "</td>" +
+                "<td>" + (log.request_id
+                    ? '<a href="/requests/' + log.request_id + '">#' + log.request_id + "</a>"
+                    : "-") + "</td>" +
+                '<td class="nowrap">' + change + "</td>" +
+                '<td class="small">' + App.esc(App.dash(log.description)) + "</td>" +
+                '<td class="small nowrap">' + App.esc(App.dash(log.ip_address)) + "</td></tr>";
+        }
+    });
+}());
+</script>
+{% endblock %}
