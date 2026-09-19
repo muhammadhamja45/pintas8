@@ -16,6 +16,7 @@
 <script>
     window.STATUS_LABELS = {{ STATUS_LABELS | tojson }};
     window.STATUS_TONES = {{ STATUS_TONES | tojson }};
+    window.ROLE_LABELS = {{ ROLE_LABELS | tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% block scripts %}{% endblock %}

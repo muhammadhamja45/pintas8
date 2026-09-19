@@ -28,7 +28,7 @@
     <div class="container">
         <div class="section-head">
             <h2>Jika Ada Kesalahan</h2>
-            <p>Editor mengembalikan request dengan catatan. User memperbaiki, lalu
+            <p>Editor mengembalikan request dengan catatan. {{ ROLE_LABELS.USER }} memperbaiki, lalu
                request kembali diperiksa editor. Putaran revisi ini dapat berulang dan
                seluruhnya tersimpan.</p>
         </div>
@@ -41,12 +41,12 @@
             <article class="step-card">
                 <span class="step-num">B</span>
                 <h3>Revision Required</h3>
-                <p>Request dikembalikan ke user beserta catatan wajib dari editor.</p>
+                <p>Request dikembalikan ke {{ ROLE_LABELS.USER }} beserta catatan wajib dari editor.</p>
             </article>
             <article class="step-card">
                 <span class="step-num">C</span>
-                <h3>User Revision</h3>
-                <p>User memperbaiki data, text, foto, atau kebutuhan cetak.</p>
+                <h3>{{ ROLE_LABELS.USER }} Revision</h3>
+                <p>{{ ROLE_LABELS.USER }} memperbaiki data, text, foto, atau kebutuhan cetak.</p>
             </article>
             <article class="step-card">
                 <span class="step-num">D</span>

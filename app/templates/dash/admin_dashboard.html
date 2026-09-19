@@ -12,7 +12,7 @@
 <div class="stat-grid">
     {{ ui.stat_card('Total Request', 'stat-total') }}
     {{ ui.stat_card('Incoming', 'stat-incoming', 'is-warning') }}
-    {{ ui.stat_card('Admin Review', 'stat-review') }}
+    {{ ui.stat_card(ROLE_LABELS.ADMIN + ' Review', 'stat-review') }}
     {{ ui.stat_card('Editor Queue', 'stat-editor') }}
     {{ ui.stat_card('Siap Produksi', 'stat-prodqueue', 'is-success') }}
     {{ ui.stat_card('Sedang Produksi', 'stat-inprod') }}
@@ -27,7 +27,7 @@
             <a class="btn btn-sm btn-outline" href="{{ url_for('dashboard.admin_queue', queue='incoming') }}">Incoming</a>
         </div>
         {{ ui.data_table('pending', [
-            {'label': 'Kode'}, {'label': 'Judul'}, {'label': 'User'},
+            {'label': 'Kode'}, {'label': 'Judul'}, {'label': ROLE_LABELS.USER},
             {'label': 'Status'}, {'label': 'Masuk'}
         ]) }}
     </div>
@@ -103,7 +103,7 @@
                 "<dt>Kode</dt><dd>" + App.esc(r.request_code) + "</dd>" +
                 "<dt>Judul</dt><dd>" + App.esc(r.title) + "</dd>" +
                 "<dt>Status</dt><dd>" + App.statusBadge(r.status) + "</dd>" +
-                "<dt>User</dt><dd>" + App.esc(App.dash(r.owner)) +
+                "<dt>{{ ROLE_LABELS.USER }}</dt><dd>" + App.esc(App.dash(r.owner)) +
                     (r.owner_email ? ' <span class="small muted">(' + App.esc(r.owner_email) + ")</span>" : "") + "</dd>" +
                 "<dt>Jenis Buku</dt><dd>" + App.esc(App.dash(r.book_type)) + "</dd>" +
                 "<dt>Jumlah Anggota</dt><dd>" + App.esc(App.dash(r.member_count)) + "</dd>" +
@@ -126,7 +126,7 @@
                         (h.old_status ? App.statusLabel(h.old_status) + " &rarr; " : "") +
                         App.statusLabel(h.new_status) + "</div>" +
                         '<div class="small muted">' + App.esc(h.actor) +
-                        (h.actor_role ? " (" + App.esc(h.actor_role) + ")" : "") + "</div>" +
+                        (h.actor_role ? " (" + App.esc(App.roleLabel(h.actor_role)) + ")" : "") + "</div>" +
                         (h.note ? '<div class="tl-note">' + App.esc(h.note) + "</div>" : "") +
                         "</li>";
                 }).join("") + "</ul>";
@@ -150,7 +150,7 @@
                 '<div class="tl-time">' + App.esc(log.created_at) + "</div>" +
                 '<div class="tl-title">' + App.esc(log.action) + "</div>" +
                 '<div class="small muted">' + App.esc(log.actor) +
-                (log.actor_role ? " (" + App.esc(log.actor_role) + ")" : "") + "</div>" +
+                (log.actor_role ? " (" + App.esc(App.roleLabel(log.actor_role)) + ")" : "") + "</div>" +
                 (log.description ? '<div class="tl-note">' + App.esc(log.description) + "</div>" : "") +
                 "</li>";
         }).join("") + "</ul>";

@@ -24,11 +24,11 @@ ALL_STATUSES = [
 STATUS_LABELS = {
     DRAFT: "Draft",
     SUBMITTED: "Submitted",
-    ADMIN_REVIEW: "Admin Review",
-    ADMIN_APPROVED: "Admin Approved",
+    ADMIN_REVIEW: "Kabag Review",
+    ADMIN_APPROVED: "Kabag Approved",
     EDITOR_REVIEW: "Editor Review",
     REVISION_REQUIRED: "Revision Required",
-    USER_REVISION: "User Revision",
+    USER_REVISION: "Sekjen/Dewan Revision",
     EDITOR_APPROVED: "Editor Approved",
     READY_FOR_PRODUCTION: "Ready for Production",
     PRODUCTION: "Production",
@@ -36,6 +36,15 @@ STATUS_LABELS = {
     COMPLETED: "Completed",
     REJECTED: "Rejected",
     CANCELLED: "Cancelled",
+}
+
+# Role identifiers stay ADMIN/USER/etc internally (auth, DB, workflow logic);
+# this only maps them to the display name shown in the UI.
+ROLE_LABELS = {
+    "ADMIN": "Kabag",
+    "USER": "Sekjen/Dewan",
+    "EDITOR": "Editor",
+    "PRODUCTION": "Produksi",
 }
 
 # Badge colour class per status, used by the status_badge macro.

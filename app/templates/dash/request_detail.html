@@ -25,13 +25,13 @@
             <button class="btn" id="btn-start-review">Mulai Review</button>
         {% elif role == 'ADMIN' and req.status == 'ADMIN_REVIEW' %}
             <button class="btn btn-success" id="btn-approve">Approve</button>
-            <button class="btn btn-warning" id="btn-return">Return ke User</button>
+            <button class="btn btn-warning" id="btn-return">Return ke {{ ROLE_LABELS.USER }}</button>
             <button class="btn btn-danger" id="btn-reject">Reject</button>
         {% elif role == 'ADMIN' and req.status == 'READY_FOR_PRODUCTION' %}
             <button class="btn btn-success" id="btn-send-production">Kirim ke Produksi</button>
         {% elif role in ['EDITOR', 'ADMIN'] and req.status == 'EDITOR_REVIEW' %}
             <button class="btn btn-outline" id="btn-save-checklist">Simpan Checklist</button>
-            <button class="btn btn-warning" id="btn-editor-return">Return ke User</button>
+            <button class="btn btn-warning" id="btn-editor-return">Return ke {{ ROLE_LABELS.USER }}</button>
             <button class="btn btn-success" id="btn-editor-approve">Approve &amp; Ready for Production</button>
         {% endif %}
         {% if req.production_order and role in ['ADMIN', 'PRODUCTION'] %}
@@ -255,14 +255,14 @@
                     <div class="rev-head">
                         <strong>Revision #{{ revision.revision_number }}</strong>
                         <span class="badge badge-{{ 'success' if revision.resolved_at else 'warning' }}">
-                            {{ 'Selesai' if revision.resolved_at else 'Menunggu user' }}
+                            {{ 'Selesai' if revision.resolved_at else 'Menunggu ' + ROLE_LABELS.USER }}
                         </span>
                     </div>
                     <div class="rev-body">
                         <span class="label">Editor ({{ revision.requester.full_name if revision.requester else '-' }})</span>
                         <div style="white-space:pre-wrap">{{ revision.editor_note }}</div>
                         {% if revision.user_response %}
-                        <span class="label">User ({{ revision.resolver.full_name if revision.resolver else '-' }})</span>
+                        <span class="label">{{ ROLE_LABELS.USER }} ({{ revision.resolver.full_name if revision.resolver else '-' }})</span>
                         <div style="white-space:pre-wrap">{{ revision.user_response }}</div>
                         {% endif %}
                     </div>
@@ -335,7 +335,7 @@
     on("btn-submit", function (ev) {
         App.confirm({
             title: "Submit Request",
-            message: "Request akan dikirim ke Admin untuk diperiksa dan tidak dapat " +
+            message: "Request akan dikirim ke {{ ROLE_LABELS.ADMIN }} untuk diperiksa dan tidak dapat " +
                      "diubah selama proses approval berlangsung.",
             confirmLabel: "Submit"
         }).then(function (res) {
@@ -397,11 +397,11 @@
 
     on("btn-return", function (ev) {
         App.confirm({
-            title: "Return ke User", confirmLabel: "Return", confirmClass: "btn-warning",
-            reason: true, reasonRequired: true, reasonLabel: "Catatan untuk user"
+            title: "Return ke {{ ROLE_LABELS.USER }}", confirmLabel: "Return", confirmClass: "btn-warning",
+            reason: true, reasonRequired: true, reasonLabel: "Catatan untuk {{ ROLE_LABELS.USER }}"
         }).then(function (res) {
             if (res) { act(ev.target, App.api.post("/api/admin/requests/" + REQ_ID + "/return",
-                           { note: res.note }), "Request dikembalikan ke user."); }
+                           { note: res.note }), "Request dikembalikan ke {{ ROLE_LABELS.USER }}."); }
         });
     });
 
@@ -437,8 +437,8 @@
 
     on("btn-editor-return", function (ev) {
         App.confirm({
-            title: "Return ke User untuk Revisi",
-            message: "Jelaskan dengan detail bagian mana yang harus diperbaiki user.",
+            title: "Return ke {{ ROLE_LABELS.USER }} untuk Revisi",
+            message: "Jelaskan dengan detail bagian mana yang harus diperbaiki {{ ROLE_LABELS.USER }}.",
             confirmLabel: "Return", confirmClass: "btn-warning",
             reason: true, reasonRequired: true, reasonLabel: "Catatan revisi",
             reasonPlaceholder: "Contoh: Foto anggota nomor 4 belum tersedia."

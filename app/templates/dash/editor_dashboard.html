@@ -14,7 +14,7 @@
 
 <div class="stat-grid">
     {{ ui.stat_card('Review Queue', 'stat-queue', 'is-warning') }}
-    {{ ui.stat_card('Menunggu Revisi User', 'stat-revision', 'is-danger') }}
+    {{ ui.stat_card('Menunggu Revisi ' + ROLE_LABELS.USER, 'stat-revision', 'is-danger') }}
     {{ ui.stat_card('Siap Produksi', 'stat-ready', 'is-success') }}
     {{ ui.stat_card('Completed', 'stat-completed', 'is-success') }}
 </div>
@@ -22,7 +22,7 @@
 <div class="card">
     <div class="card-head"><h2>Menunggu Pemeriksaan</h2></div>
     {{ ui.data_table('queue', [
-        {'label': 'Kode'}, {'label': 'Judul'}, {'label': 'User'}, {'label': 'Jenis'},
+        {'label': 'Kode'}, {'label': 'Judul'}, {'label': ROLE_LABELS.USER}, {'label': 'Jenis'},
         {'label': 'Revisi'}, {'label': 'Status'}, {'label': ''}
     ]) }}
 </div>

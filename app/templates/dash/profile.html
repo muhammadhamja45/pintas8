@@ -35,7 +35,7 @@
                     <div class="field">
                         <label for="username-ro">Username</label>
                         <input type="text" id="username-ro" value="{{ current_user.username }}" disabled>
-                        <div class="small muted mt-1">Username hanya dapat diubah Admin.</div>
+                        <div class="small muted mt-1">Username hanya dapat diubah {{ ROLE_LABELS.ADMIN }}.</div>
                     </div>
                 </div>
 
@@ -70,7 +70,7 @@
         <div class="card-head"><h2>Informasi</h2></div>
         <div class="card-body">
             <dl class="kv" style="grid-template-columns:120px 1fr">
-                <dt>Role</dt><dd><span class="badge badge-info">{{ current_user.role_name }}</span></dd>
+                <dt>Role</dt><dd><span class="badge badge-info">{{ ROLE_LABELS.get(current_user.role_name, current_user.role_name) }}</span></dd>
                 <dt>Status</dt>
                 <dd><span class="badge badge-{{ 'success' if current_user.is_active else 'muted' }}">
                     {{ 'Aktif' if current_user.is_active else 'Nonaktif' }}</span></dd>

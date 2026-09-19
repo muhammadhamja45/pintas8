@@ -45,7 +45,7 @@
                 "<td>" + (h.old_status ? App.statusBadge(h.old_status) : "-") + "</td>" +
                 "<td>" + App.statusBadge(h.new_status) + "</td>" +
                 "<td>" + App.esc(h.actor) +
-                (h.actor_role ? '<div class="small muted">' + App.esc(h.actor_role) +
+                (h.actor_role ? '<div class="small muted">' + App.esc(App.roleLabel(h.actor_role)) +
                  "</div>" : "") + "</td>" +
                 '<td class="small">' + App.esc(App.dash(h.note)) + "</td></tr>";
         }

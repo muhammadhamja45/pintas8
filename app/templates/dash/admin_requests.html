@@ -6,7 +6,7 @@
     <div>
         <h1>{{ page_title }}</h1>
         <p>
-            {% if queue == 'incoming' %}Request yang baru disubmit user dan menunggu diperiksa.
+            {% if queue == 'incoming' %}Request yang baru disubmit {{ ROLE_LABELS.USER }} dan menunggu diperiksa.
             {% elif queue == 'approval' %}Request yang sedang Anda review dan menunggu keputusan.
             {% elif queue == 'editor-queue' %}Request yang sedang ditangani editor.
             {% elif queue == 'production-queue' %}Request yang siap dan sedang diproduksi.
@@ -25,7 +25,7 @@
     {{ ui.data_table('requests', [
         {'label': 'Kode', 'sort': 'request_code'},
         {'label': 'Judul', 'sort': 'title'},
-        {'label': 'User'},
+        {'label': ROLE_LABELS.USER},
         {'label': 'Jenis'},
         {'label': 'Deadline', 'sort': 'deadline'},
         {'label': 'Revisi'},

@@ -51,6 +51,7 @@ def register_jinja(app):
             "csrf_token": csrf_token,
             "STATUS_LABELS": wf.STATUS_LABELS,
             "STATUS_TONES": wf.STATUS_TONES,
+            "ROLE_LABELS": wf.ROLE_LABELS,
             "ALL_STATUSES": wf.ALL_STATUSES,
             "PUBLIC_ELIGIBLE_STATUSES": wf.PUBLIC_ELIGIBLE_STATUSES,
             "CHECKLIST_FIELDS": CHECKLIST_FIELDS,

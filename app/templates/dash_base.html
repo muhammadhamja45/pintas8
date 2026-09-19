@@ -109,7 +109,7 @@
             <button class="icon-btn" id="sidebar-toggle" type="button" aria-label="Toggle sidebar">&#9776;</button>
             <div>
                 <div class="page-title">{{ page_title }}</div>
-                <div class="breadcrumb">{{ role | title }} / {{ page_title }}</div>
+                <div class="breadcrumb">{{ ROLE_LABELS.get(role, role) }} / {{ page_title }}</div>
             </div>
             <div class="spacer"></div>
 
@@ -134,7 +134,7 @@
                     <span class="avatar">{{ current_user.full_name[:1] | upper }}</span>
                     <span class="who">
                         {{ current_user.full_name }}
-                        <small>{{ role | title }}</small>
+                        <small>{{ ROLE_LABELS.get(role, role) }}</small>
                     </span>
                     <span aria-hidden="true">&#9662;</span>
                 </button>

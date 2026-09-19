@@ -19,7 +19,7 @@
             <label for="filter-role">Role</label>
             <select id="filter-role">
                 <option value="">Semua role</option>
-                {% for role in roles %}<option value="{{ role.name }}">{{ role.name }}</option>{% endfor %}
+                {% for role in roles %}<option value="{{ role.name }}">{{ ROLE_LABELS.get(role.name, role.name) }}</option>{% endfor %}
             </select>
         </div>
     </div>
@@ -42,7 +42,7 @@
     function userDialog(user) {
         var roleOptions = ROLES.map(function (name) {
             return '<option value="' + name + '"' +
-                (user && user.role === name ? " selected" : "") + ">" + name + "</option>";
+                (user && user.role === name ? " selected" : "") + ">" + App.roleLabel(name) + "</option>";
         }).join("");
 
         App.modal({
@@ -119,7 +119,7 @@
                 "<td>" + App.esc(user.full_name) + "</td>" +
                 "<td>" + App.esc(user.username) + "</td>" +
                 "<td>" + App.esc(user.email) + "</td>" +
-                '<td><span class="badge badge-info">' + App.esc(user.role) + "</span></td>" +
+                '<td><span class="badge badge-info">' + App.esc(App.roleLabel(user.role)) + "</span></td>" +
                 '<td><span class="badge badge-' + (user.is_active ? "success" : "muted") +
                 '">' + (user.is_active ? "Aktif" : "Nonaktif") + "</span></td>" +
                 '<td class="nowrap small">' + App.esc(App.dash(user.last_login_at)) + "</td>" +

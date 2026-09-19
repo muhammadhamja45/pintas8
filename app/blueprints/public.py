@@ -2,17 +2,21 @@ from flask import Blueprint, abort, render_template, request, send_file
 
 from ..models import BookRequest, BookType, EbookShowcase
 from ..security import resolve_upload_path
+from ..workflow import ROLE_LABELS
 
 bp = Blueprint("public", __name__)
 
+_USER = ROLE_LABELS["USER"]
+_ADMIN = ROLE_LABELS["ADMIN"]
+
 PROCESS_STEPS = [
-    ("01", "Request", "User mengisi data buku, anggota, materi foto dan text, "
+    ("01", "Request", f"{_USER} mengisi data buku, anggota, materi foto dan text, "
                       "lalu mengirim pengajuan."),
-    ("02", "Admin Approval", "Admin memeriksa kelengkapan pengajuan dan menyetujui "
+    ("02", f"{_ADMIN} Approval", f"{_ADMIN} memeriksa kelengkapan pengajuan dan menyetujui "
                              "atau mengembalikannya."),
     ("03", "Editor Review", "Editor memeriksa cover, foto, nama anggota, layout, "
                             "dan kebutuhan cetak melalui checklist."),
-    ("04", "Revision", "Bila ada kekurangan, request dikembalikan ke user dengan "
+    ("04", "Revision", f"Bila ada kekurangan, request dikembalikan ke {_USER} dengan "
                        "catatan dan direvisi."),
     ("05", "Production", "Tim produksi mengerjakan pencetakan sesuai spesifikasi "
                          "yang telah disetujui."),
@@ -23,10 +27,10 @@ PROCESS_STEPS = [
 FEATURES = [
     ("Book Request", "Pengajuan buku lengkap dengan jenis, anggota, deadline, "
                      "dan kebutuhan cetak."),
-    ("Approval Workflow", "Alur persetujuan bertingkat dari admin hingga siap produksi."),
+    ("Approval Workflow", f"Alur persetujuan bertingkat dari {_ADMIN.lower()} hingga siap produksi."),
     ("Editor Review", "Checklist pemeriksaan editor yang tersimpan pada setiap request."),
     ("Revision Management", "Setiap putaran revisi dicatat lengkap dengan catatan "
-                            "editor dan tanggapan user."),
+                            f"editor dan tanggapan {_USER.lower()}."),
     ("File Management", "Upload cover, foto anggota, dokumentasi, dan lampiran "
                         "dengan validasi keamanan."),
     ("Notification", "Pemberitahuan internal setiap kali status request berpindah."),

@@ -212,6 +212,9 @@
     App.statusLabel = function (status) {
         return (window.STATUS_LABELS && window.STATUS_LABELS[status]) || status || "-";
     };
+    App.roleLabel = function (role) {
+        return (window.ROLE_LABELS && window.ROLE_LABELS[role]) || role || "-";
+    };
     App.statusBadge = function (status) {
         var tone = (window.STATUS_TONES && window.STATUS_TONES[status]) || "muted";
         return '<span class="badge badge-' + tone + '">' + esc(App.statusLabel(status)) +

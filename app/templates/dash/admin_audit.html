@@ -60,7 +60,7 @@
                 '<td class="nowrap small">' + App.esc(log.created_at) + "</td>" +
                 '<td class="nowrap">' + App.esc(log.action.replace(/_/g, " ")) + "</td>" +
                 "<td>" + App.esc(log.actor) +
-                (log.actor_role ? '<div class="small muted">' + App.esc(log.actor_role) +
+                (log.actor_role ? '<div class="small muted">' + App.esc(App.roleLabel(log.actor_role)) +
                  "</div>" : "") + "</td>" +
                 "<td>" + (log.request_id
                     ? '<a href="/requests/' + log.request_id + '">#' + log.request_id + "</a>"
