@@ -535,6 +535,8 @@ button.catalog-card { font: inherit; padding: 0; width: 100%; cursor: pointer; }
 }
 .sidebar-head .brand { color: #fff; font-size: .95rem; font-weight: 600;
     letter-spacing: .01em; overflow: hidden; white-space: nowrap; }
+.sidebar-head .brand span { background: none; -webkit-background-clip: initial;
+    background-clip: initial; color: #fff; }
 .sidebar-head .brand .brand-mark { box-shadow: 0 3px 10px rgba(0, 0, 0, .35); }
 .sidebar-nav {
     flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1rem .65rem;
