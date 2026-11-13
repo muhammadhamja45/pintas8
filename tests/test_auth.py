@@ -54,4 +54,4 @@ def test_password_is_hashed_not_plaintext(app):
 def test_public_home_does_not_require_login(client):
     res = client.get("/")
     assert res.status_code == 200
-    assert b"Book 2 Management" in res.data
+    assert b"Digital Book DPR" in res.data

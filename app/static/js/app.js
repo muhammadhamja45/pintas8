@@ -367,25 +367,51 @@
 
         // sidebar collapse / mobile drawer
         var sidebarToggle = qs("#sidebar-toggle");
+        var sidebarClose = qs("#sidebar-close");
+
+        function syncSidebarAria() {
+            if (!sidebarToggle) { return; }
+            var expanded = window.innerWidth <= 992
+                ? document.body.classList.contains("sidebar-open")
+                : !document.body.classList.contains("sidebar-collapsed");
+            sidebarToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+        }
+
+        function setSidebarOpen(open) {
+            document.body.classList.toggle("sidebar-open", open);
+            syncSidebarAria();
+        }
+
+        function closeSidebar() {
+            setSidebarOpen(false);
+            if (sidebarToggle) { sidebarToggle.focus(); }
+        }
+
         if (sidebarToggle) {
             if (localStorage.getItem("sidebarCollapsed") === "1") {
                 document.body.classList.add("sidebar-collapsed");
             }
+            syncSidebarAria();
             sidebarToggle.addEventListener("click", function () {
                 if (window.innerWidth <= 992) {
-                    document.body.classList.toggle("sidebar-open");
+                    setSidebarOpen(!document.body.classList.contains("sidebar-open"));
                 } else {
                     var collapsed = document.body.classList.toggle("sidebar-collapsed");
                     localStorage.setItem("sidebarCollapsed", collapsed ? "1" : "0");
+                    syncSidebarAria();
                 }
             });
         }
         var scrim = qs(".sidebar-scrim");
         if (scrim) {
             scrim.addEventListener("click", function () {
-                document.body.classList.remove("sidebar-open");
+                setSidebarOpen(false);
             });
         }
+        if (sidebarClose) {
+            sidebarClose.addEventListener("click", closeSidebar);
+        }
+        window.addEventListener("resize", syncSidebarAria);
 
         // tabs
         qsa("[data-tabs]").forEach(function (group) {

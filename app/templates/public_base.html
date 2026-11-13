@@ -2,7 +2,7 @@
 
 {% block head %}
 {{ super() }}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css', v='2') }}">
 {% endblock %}
 
 {% block body %}
@@ -101,18 +101,34 @@
     var header = document.querySelector(".site-header");
     var toggle = header ? header.querySelector(".nav-toggle") : null;
     if (!header || !toggle) { return; }
-    toggle.addEventListener("click", function () {
-        var open = header.classList.toggle("is-open");
+
+    function setMenu(open) {
+        header.classList.toggle("is-open", open);
+        document.body.classList.toggle("menu-open", open);
         toggle.setAttribute("aria-expanded", open ? "true" : "false");
         toggle.setAttribute("aria-label", open ? "Tutup menu" : "Buka menu");
+    }
+
+    toggle.addEventListener("click", function () {
+        setMenu(!header.classList.contains("is-open"));
     });
+
+    Array.prototype.forEach.call(
+        header.querySelectorAll(".site-nav a"),
+        function (link) {
+            link.addEventListener("click", function () { setMenu(false); });
+        }
+    );
+
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape" && header.classList.contains("is-open")) {
-            header.classList.remove("is-open");
-            toggle.setAttribute("aria-expanded", "false");
-            toggle.setAttribute("aria-label", "Buka menu");
+            setMenu(false);
             toggle.focus();
         }
+    });
+
+    window.addEventListener("resize", function () {
+        if (window.innerWidth > 920) { setMenu(false); }
     });
 })();
 </script>
