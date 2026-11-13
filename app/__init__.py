@@ -1,7 +1,7 @@
 import os
 
 from flask import Flask, jsonify, render_template
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, default_exceptions
 
 from .config import Config
 from .extensions import db
@@ -69,14 +69,36 @@ def register_jinja(app):
         return f"{value:.1f} GB"
 
 
+ERROR_MESSAGES = {
+    400: "Permintaan tidak valid.",
+    401: "Anda harus login terlebih dahulu.",
+    403: "Anda tidak memiliki akses.",
+    404: "Halaman atau data yang diminta tidak ditemukan.",
+    405: "Metode permintaan tidak diizinkan.",
+    409: "Data bertentangan dengan kondisi saat ini.",
+    413: "File yang diunggah terlalu besar.",
+    422: "Data yang dikirim tidak valid.",
+    500: "Terjadi kesalahan pada server.",
+}
+
+
+def _localized_description(error):
+    """Keep custom abort() messages, replace Werkzeug's English defaults."""
+    default = default_exceptions.get(error.code)
+    if default is not None and error.description == default.description:
+        return ERROR_MESSAGES.get(error.code, error.description)
+    return error.description
+
+
 def register_errors(app):
     """JSON for API callers, rendered page otherwise. Same status codes either way."""
 
     @app.errorhandler(HTTPException)
     def handle_http(error):
+        message = _localized_description(error)
         if wants_json():
-            return jsonify(success=False, message=error.description, errors=[]), error.code
-        return render_template("error.html", code=error.code, message=error.description), error.code
+            return jsonify(success=False, message=message, errors=[]), error.code
+        return render_template("error.html", code=error.code, message=message), error.code
 
     @app.errorhandler(Exception)
     def handle_unexpected(error):

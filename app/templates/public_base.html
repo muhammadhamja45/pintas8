@@ -1,45 +1,119 @@
 {% extends "base.html" %}
 
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
+{% endblock %}
+
 {% block body %}
-<header class="public-nav">
-    <div class="container nav-inner">
-        <a class="brand" href="{{ url_for('public.home') }}">
-            <span class="brand-mark" aria-hidden="true">&#128216;</span>
-            <span>{{ APP_NAME }}</span>
+<div class="public-page">
+<header class="site-header">
+    <div class="container site-header-inner">
+        <a class="wordmark" href="{{ url_for('public.home') }}" aria-label="{{ APP_NAME }} beranda">
+            <svg class="wordmark-mark" viewBox="0 0 28 36" fill="none" aria-hidden="true">
+                <path d="M2.5 2.5h16.5A6.5 6.5 0 0 1 25.5 9v24.5H8.5a6 6 0 0 1-6-6V2.5Z" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M2.5 27.5a6 6 0 0 1 6-6h17" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M8.5 8.5h10M8.5 13.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            <span class="wordmark-text">
+                <span class="wordmark-name">Digital Book</span>
+                <span class="wordmark-sub">DPR</span>
+            </span>
         </a>
 
-        <button class="nav-toggle" type="button" aria-label="Buka menu" aria-expanded="false">&#9776;</button>
+        <button class="nav-toggle" type="button" aria-label="Buka menu" aria-expanded="false" aria-controls="site-nav">
+            <span></span><span></span><span></span>
+        </button>
 
-        <ul class="nav-links">
-            <li><a href="{{ url_for('public.home') }}" class="{{ 'active' if page == 'home' }}">Home</a></li>
-            <li><a href="{{ url_for('public.about') }}" class="{{ 'active' if page == 'about' }}">Tentang</a></li>
-            <li><a href="{{ url_for('public.workflow_page') }}" class="{{ 'active' if page == 'workflow' }}">Alur Proses</a></li>
-            <li><a href="{{ url_for('public.features') }}" class="{{ 'active' if page == 'features' }}">Fitur</a></li>
-            {% if current_user %}
-                <li class="nav-actions">
-                    <a class="btn btn-sm" href="{{ url_for('auth.dashboard_redirect') }}">Dashboard</a>
-                    <form method="post" action="{{ url_for('auth.logout') }}" style="margin:0">
+        <nav class="site-nav" id="site-nav" aria-label="Navigasi utama">
+            <ul class="site-nav-links">
+                <li><a href="{{ url_for('public.home') }}" class="{{ 'is-active' if page == 'home' }}">Beranda</a></li>
+                <li><a href="{{ url_for('public.about') }}" class="{{ 'is-active' if page == 'about' }}">Tentang</a></li>
+                <li><a href="{{ url_for('public.workflow_page') }}" class="{{ 'is-active' if page == 'workflow' }}">Alur proses</a></li>
+                <li><a href="{{ url_for('public.features') }}" class="{{ 'is-active' if page == 'features' }}">Fitur</a></li>
+                <li><a href="{{ url_for('public.home') }}#katalog">Katalog</a></li>
+            </ul>
+            <div class="site-nav-actions">
+                {% if current_user %}
+                    <a class="nav-solid" href="{{ url_for('auth.dashboard_redirect') }}">Dashboard</a>
+                    <form method="post" action="{{ url_for('auth.logout') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="btn btn-sm btn-outline" type="submit">Logout</button>
+                        <button class="nav-quiet" type="submit">Keluar</button>
                     </form>
-                </li>
-            {% else %}
-                <li class="nav-actions">
-                    <a class="btn btn-sm" href="{{ url_for('auth.login') }}">Pengajuan Buku</a>
-                </li>
-            {% endif %}
-        </ul>
+                {% else %}
+                    <a class="nav-solid" href="{{ url_for('auth.login') }}">Masuk</a>
+                {% endif %}
+            </div>
+        </nav>
     </div>
 </header>
 
 {% block content %}{% endblock %}
 
-<footer class="public-footer">
+<footer class="site-footer">
     <div class="container">
-        <strong style="color:#fff">{{ APP_NAME }}</strong>
-        <p style="color:#a9b6cc;margin:.35rem 0 0">
-            Sistem manajemen pengajuan, approval, pemeriksaan editor, revisi, dan produksi buku.
-        </p>
+        <div class="footer-top">
+            <div class="footer-brand">
+                <a class="wordmark" href="{{ url_for('public.home') }}" aria-label="{{ APP_NAME }} beranda">
+                    <svg class="wordmark-mark" viewBox="0 0 28 36" fill="none" aria-hidden="true">
+                        <path d="M2.5 2.5h16.5A6.5 6.5 0 0 1 25.5 9v24.5H8.5a6 6 0 0 1-6-6V2.5Z" stroke="currentColor" stroke-width="1.4"/>
+                        <path d="M2.5 27.5a6 6 0 0 1 6-6h17" stroke="currentColor" stroke-width="1.4"/>
+                        <path d="M8.5 8.5h10M8.5 13.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                    </svg>
+                    <span class="wordmark-text">
+                        <span class="wordmark-name">Digital Book</span>
+                        <span class="wordmark-sub">DPR</span>
+                    </span>
+                </a>
+                <p>Sistem manajemen pengajuan, persetujuan, pemeriksaan editor, revisi, dan produksi buku dalam satu alur yang tercatat.</p>
+            </div>
+            <div class="footer-cols">
+                <div>
+                    <h2>Halaman</h2>
+                    <ul>
+                        <li><a href="{{ url_for('public.home') }}">Beranda</a></li>
+                        <li><a href="{{ url_for('public.about') }}">Tentang</a></li>
+                        <li><a href="{{ url_for('public.workflow_page') }}">Alur proses</a></li>
+                        <li><a href="{{ url_for('public.features') }}">Fitur</a></li>
+                        <li><a href="{{ url_for('public.home') }}#katalog">Katalog buku</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h2>Peran</h2>
+                    <ul>
+                        <li>{{ ROLE_LABELS.USER }}</li>
+                        <li>{{ ROLE_LABELS.ADMIN }}</li>
+                        <li>{{ ROLE_LABELS.EDITOR }}</li>
+                        <li>{{ ROLE_LABELS.PRODUCTION }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>{{ APP_NAME }}</span>
+            <span>Sistem penerbitan internal</span>
+        </div>
     </div>
 </footer>
+</div>
+<script>
+(function () {
+    var header = document.querySelector(".site-header");
+    var toggle = header ? header.querySelector(".nav-toggle") : null;
+    if (!header || !toggle) { return; }
+    toggle.addEventListener("click", function () {
+        var open = header.classList.toggle("is-open");
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        toggle.setAttribute("aria-label", open ? "Tutup menu" : "Buka menu");
+    });
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && header.classList.contains("is-open")) {
+            header.classList.remove("is-open");
+            toggle.setAttribute("aria-expanded", "false");
+            toggle.setAttribute("aria-label", "Buka menu");
+            toggle.focus();
+        }
+    });
+})();
+</script>
 {% endblock %}

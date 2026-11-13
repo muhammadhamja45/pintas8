@@ -20,6 +20,44 @@
     {{ ui.stat_card('Rejected / Cancelled', 'stat-rejected', 'is-danger') }}
 </div>
 
+<div class="card chart-card">
+    <div class="card-head chart-card-head">
+        <div>
+            <h2>Distribusi Status</h2>
+            <p class="chart-sub">Sebaran request aktif per tahap alur, diurutkan dari yang terbanyak.</p>
+        </div>
+        <div class="chart-total">
+            <span class="chart-total-value">{{ chart_total }}</span>
+            <span class="chart-total-label">request</span>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if chart_rows %}
+        <ul class="bar-chart" aria-label="Distribusi status request">
+            {% for row in chart_rows %}
+            <li class="bar-row">
+                <span class="bar-label">{{ row.label }}</span>
+                <span class="bar-track" aria-hidden="true">
+                    <span class="bar-fill tone-{{ STATUS_TONES.get(row.status, 'muted') }}"
+                          style="--bar-width: {{ row.share }}%; --bar-delay: {{ loop.index0 * 45 }}ms"></span>
+                </span>
+                <span class="bar-value">
+                    <strong>{{ row.count }}</strong>
+                    <small>{{ row.share }}%</small>
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+        <div class="chart-foot">
+            <span>Panjang batang menunjukkan proporsi terhadap total request.</span>
+            <a href="{{ url_for('dashboard.admin_queue', queue='books') }}">Lihat semua request</a>
+        </div>
+        {% else %}
+        <div class="empty-state">Belum ada request untuk ditampilkan.</div>
+        {% endif %}
+    </div>
+</div>
+
 <div class="detail-grid">
     <div class="card">
         <div class="card-head">

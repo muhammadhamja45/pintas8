@@ -170,7 +170,7 @@
                     {% if editable %}
                         <textarea id="text-{{ key }}" data-section="{{ key }}">{{ text_map.get(key, '') }}</textarea>
                     {% else %}
-                        <div style="white-space:pre-wrap;background:var(--muted-bg);padding:.6rem .75rem;border-radius:6px;font-size:.88rem">{{ text_map.get(key) or '-' }}</div>
+                        <div style="white-space:pre-wrap;background:var(--muted-bg);padding:.6rem .75rem;border-radius:2px;font-size:.88rem">{{ text_map.get(key) or '-' }}</div>
                     {% endif %}
                 </div>
                 {% endfor %}

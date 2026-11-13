@@ -4,61 +4,108 @@
 
 {% set role = current_user.role_name %}
 
+{% macro nav_icon(name) -%}
+<svg class="nav-svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"
+     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{%- if name == 'grid' -%}
+<rect x="3" y="3" width="5.5" height="5.5" rx="1"/><rect x="11.5" y="3" width="5.5" height="5.5" rx="1"/><rect x="3" y="11.5" width="5.5" height="5.5" rx="1"/><rect x="11.5" y="11.5" width="5.5" height="5.5" rx="1"/>
+{%- elif name == 'book-plus' -%}
+<path d="M4 3.5h7.9A2.6 2.6 0 0 1 14.5 6v11H6.5A2.5 2.5 0 0 1 4 14.5v-11Z"/><path d="M4 14.5A2.5 2.5 0 0 1 6.5 12h8"/><path d="M11.2 7v4M9.2 9h4"/>
+{%- elif name == 'books' -%}
+<path d="M3.5 4.5H7v12H3.5zM9 4.5h3.5v12H9z"/><path d="M14.5 5.2l2.4-.6 1.6 11.4-2.4.6"/>
+{%- elif name == 'list' -%}
+<path d="M7 5h9M7 10h9M7 15h9"/><path d="M3.5 5h.01M3.5 10h.01M3.5 15h.01"/>
+{%- elif name == 'pencil' -%}
+<path d="M4 16.2l.8-3.3 8.6-8.6a1.7 1.7 0 0 1 2.4 2.4l-8.6 8.6-3.2.9Z"/><path d="M12 5.5l2.5 2.5"/>
+{%- elif name == 'bell' -%}
+<path d="M10 2.8a4.3 4.3 0 0 0-4.3 4.3v2.3c0 .8-.3 1.5-.8 2.1l-1 1.1a.7.7 0 0 0 .5 1.2h11.2a.7.7 0 0 0 .5-1.2l-1-1.1a3.2 3.2 0 0 1-.8-2.1V7.1A4.3 4.3 0 0 0 10 2.8Z"/><path d="M8.2 16.2a1.9 1.9 0 0 0 3.6 0"/>
+{%- elif name == 'clock' -%}
+<circle cx="10" cy="10" r="6.8"/><path d="M10 6.2v4.1l2.8 1.5"/>
+{%- elif name == 'user' -%}
+<circle cx="10" cy="6.6" r="2.9"/><path d="M4.2 16.5c.5-3 2.7-4.6 5.8-4.6s5.3 1.6 5.8 4.6"/>
+{%- elif name == 'users' -%}
+<circle cx="7.6" cy="7" r="2.4"/><path d="M3.3 15.6c.4-2.4 2.1-3.7 4.3-3.7s3.9 1.3 4.3 3.7"/><path d="M12.8 5.4a2.2 2.2 0 0 1 0 4.2M14.4 12.3c1.4.4 2.3 1.5 2.6 3.3"/>
+{%- elif name == 'inbox' -%}
+<path d="M3 11.5 5 4.5h10l2 7v4.5H3v-4.5Z"/><path d="M3 11.5h4l1 2h4l1-2h4"/>
+{%- elif name == 'check' -%}
+<path d="M4.5 10.5l3.7 3.7 7.3-8"/>
+{%- elif name == 'check-circle' -%}
+<circle cx="10" cy="10" r="6.8"/><path d="M6.8 10.2l2.1 2.1 4.3-4.8"/>
+{%- elif name == 'file-text' -%}
+<path d="M5 3h7l3 3v11H5V3Z"/><path d="M12 3v3h3"/><path d="M8 10h5M8 13h5"/>
+{%- elif name == 'printer' -%}
+<path d="M6.5 7V3.5h7V7"/><rect x="3.5" y="7" width="13" height="6" rx="1"/><path d="M6.5 13v3.5h7V13"/><path d="M14 9.5h.01"/>
+{%- elif name == 'search' -%}
+<circle cx="9" cy="9" r="5"/><path d="M12.5 12.5l4 4"/>
+{%- elif name == 'tag' -%}
+<path d="M3.5 3.5h5.8L17 11.2l-5.8 5.8L3.5 9.3V3.5Z"/><circle cx="6.8" cy="6.8" r="1"/>
+{%- elif name == 'settings' -%}
+<circle cx="10" cy="10" r="2.6"/><path d="M10 2.8v2M10 15.2v2M2.8 10h2M15.2 10h2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4"/>
+{%- elif name == 'logout' -%}
+<path d="M8.2 3.5H4.5v13h3.7"/><path d="M11.2 7l3 3-3 3"/><path d="M6.8 10h7.4"/>
+{%- elif name == 'menu' -%}
+<path d="M3 5.5h14M3 10h14M3 14.5h14"/>
+{%- elif name == 'chevron-down' -%}
+<path d="M5.5 8l4.5 4 4.5-4"/>
+{%- endif -%}
+</svg>
+{%- endmacro %}
+
 {% set NAV = {
     'USER': [
         ('main',   None,               None,                                  None),
-        ('Dashboard',      '▣', url_for('dashboard.user_dashboard'),    'dashboard'),
-        ('Request Buku',   '\U0001F4DA', url_for('dashboard.user_request_new'), 'request-new'),
-        ('Request Saya',   '\U0001F4CB', url_for('dashboard.user_requests'),    'requests'),
-        ('Revision',       '✎', url_for('dashboard.user_revision'),     'revision'),
+        ('Dashboard',      'grid', url_for('dashboard.user_dashboard'),    'dashboard'),
+        ('Request Buku',   'book-plus', url_for('dashboard.user_request_new'), 'request-new'),
+        ('Request Saya',   'list', url_for('dashboard.user_requests'),    'requests'),
+        ('Revision',       'pencil', url_for('dashboard.user_revision'),     'revision'),
         ('lainnya', None, None, None),
-        ('Notifications',  '\U0001F514', url_for('dashboard.notifications'),    'notifications'),
-        ('History',        '\U0001F551', url_for('dashboard.history'),          'history'),
-        ('Profile',        '\U0001F464', url_for('dashboard.profile'),          'profile')
+        ('Notifications',  'bell', url_for('dashboard.notifications'),    'notifications'),
+        ('History',        'clock', url_for('dashboard.history'),          'history'),
+        ('Profile',        'user', url_for('dashboard.profile'),          'profile')
     ],
     'ADMIN': [
         ('main', None, None, None),
-        ('Dashboard',         '▣', url_for('dashboard.admin_dashboard'), 'dashboard'),
+        ('Dashboard',         'grid', url_for('dashboard.admin_dashboard'), 'dashboard'),
         ('workflow', None, None, None),
-        ('Incoming Requests', '\U0001F4E5', url_for('dashboard.admin_queue', queue='incoming'), 'incoming'),
-        ('Approval',          '✔', url_for('dashboard.admin_queue', queue='approval'), 'approval'),
-        ('Editor Queue',      '\U0001F4DD', url_for('dashboard.admin_queue', queue='editor-queue'), 'editor-queue'),
-        ('Production Queue',  '\U0001F5A8', url_for('dashboard.admin_queue', queue='production-queue'), 'production-queue'),
-        ('All Books',         '\U0001F4DA', url_for('dashboard.admin_queue', queue='books'), 'books'),
+        ('Incoming Requests', 'inbox', url_for('dashboard.admin_queue', queue='incoming'), 'incoming'),
+        ('Approval',          'check', url_for('dashboard.admin_queue', queue='approval'), 'approval'),
+        ('Editor Queue',      'file-text', url_for('dashboard.admin_queue', queue='editor-queue'), 'editor-queue'),
+        ('Production Queue',  'printer', url_for('dashboard.admin_queue', queue='production-queue'), 'production-queue'),
+        ('All Books',         'books', url_for('dashboard.admin_queue', queue='books'), 'books'),
         ('master data', None, None, None),
-        ('Users',             '\U0001F465', url_for('dashboard.admin_users'), 'users'),
-        ('Book Types',        '\U0001F3F7', url_for('dashboard.admin_book_types'), 'book-types'),
+        ('Users',             'users', url_for('dashboard.admin_users'), 'users'),
+        ('Book Types',        'tag', url_for('dashboard.admin_book_types'), 'book-types'),
         ('lainnya', None, None, None),
-        ('History',           '\U0001F551', url_for('dashboard.history'), 'history'),
-        ('Audit Log',         '\U0001F4DC', url_for('dashboard.admin_audit_log'), 'audit-log'),
-        ('Notifications',     '\U0001F514', url_for('dashboard.notifications'), 'notifications'),
-        ('Profile',           '\U0001F464', url_for('dashboard.profile'), 'profile')
+        ('History',           'clock', url_for('dashboard.history'), 'history'),
+        ('Audit Log',         'file-text', url_for('dashboard.admin_audit_log'), 'audit-log'),
+        ('Notifications',     'bell', url_for('dashboard.notifications'), 'notifications'),
+        ('Profile',           'user', url_for('dashboard.profile'), 'profile')
     ],
     'EDITOR': [
         ('main', None, None, None),
-        ('Dashboard',           '▣', url_for('dashboard.editor_dashboard'), 'dashboard'),
+        ('Dashboard',           'grid', url_for('dashboard.editor_dashboard'), 'dashboard'),
         ('review', None, None, None),
-        ('Review Queue',        '\U0001F4E5', url_for('dashboard.editor_queue', queue='review-queue'), 'review-queue'),
-        ('In Review',           '\U0001F50D', url_for('dashboard.editor_queue', queue='in-review'), 'in-review'),
-        ('Revision',            '✎', url_for('dashboard.editor_queue', queue='revision'), 'revision'),
-        ('Ready for Production','✔', url_for('dashboard.editor_queue', queue='ready'), 'ready'),
+        ('Review Queue',        'inbox', url_for('dashboard.editor_queue', queue='review-queue'), 'review-queue'),
+        ('In Review',           'search', url_for('dashboard.editor_queue', queue='in-review'), 'in-review'),
+        ('Revision',            'pencil', url_for('dashboard.editor_queue', queue='revision'), 'revision'),
+        ('Ready for Production','check-circle', url_for('dashboard.editor_queue', queue='ready'), 'ready'),
         ('lainnya', None, None, None),
-        ('History',             '\U0001F551', url_for('dashboard.history'), 'history'),
-        ('Notifications',       '\U0001F514', url_for('dashboard.notifications'), 'notifications'),
-        ('Profile',             '\U0001F464', url_for('dashboard.profile'), 'profile')
+        ('History',             'clock', url_for('dashboard.history'), 'history'),
+        ('Notifications',       'bell', url_for('dashboard.notifications'), 'notifications'),
+        ('Profile',             'user', url_for('dashboard.profile'), 'profile')
     ],
     'PRODUCTION': [
         ('main', None, None, None),
-        ('Dashboard',        '▣', url_for('dashboard.production_dashboard'), 'dashboard'),
+        ('Dashboard',        'grid', url_for('dashboard.production_dashboard'), 'dashboard'),
         ('produksi', None, None, None),
-        ('Production Queue', '\U0001F4E5', url_for('dashboard.production_queue', queue='queue'), 'queue'),
-        ('In Production',    '\U0001F5A8', url_for('dashboard.production_queue', queue='in-production'), 'in-production'),
-        ('Quality Check',    '\U0001F50E', url_for('dashboard.production_queue', queue='quality-check'), 'quality-check'),
-        ('Completed',        '✔', url_for('dashboard.production_queue', queue='completed'), 'completed'),
+        ('Production Queue', 'inbox', url_for('dashboard.production_queue', queue='queue'), 'queue'),
+        ('In Production',    'printer', url_for('dashboard.production_queue', queue='in-production'), 'in-production'),
+        ('Quality Check',    'search', url_for('dashboard.production_queue', queue='quality-check'), 'quality-check'),
+        ('Completed',        'check-circle', url_for('dashboard.production_queue', queue='completed'), 'completed'),
         ('lainnya', None, None, None),
-        ('History',          '\U0001F551', url_for('dashboard.history'), 'history'),
-        ('Notifications',    '\U0001F514', url_for('dashboard.notifications'), 'notifications'),
-        ('Profile',          '\U0001F464', url_for('dashboard.profile'), 'profile')
+        ('History',          'clock', url_for('dashboard.history'), 'history'),
+        ('Notifications',    'bell', url_for('dashboard.notifications'), 'notifications'),
+        ('Profile',          'user', url_for('dashboard.profile'), 'profile')
     ]
 } %}
 
@@ -67,8 +114,12 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-head">
             <a class="brand" href="{{ url_for('auth.dashboard_redirect') }}">
-                <span class="brand-mark" aria-hidden="true">&#128216;</span>
-                <span>{{ APP_NAME }}</span>
+                <svg class="brand-logo" viewBox="0 0 28 36" fill="none" aria-hidden="true">
+                    <path d="M2.5 2.5h16.5A6.5 6.5 0 0 1 25.5 9v24.5H8.5a6 6 0 0 1-6-6V2.5Z" stroke="currentColor" stroke-width="1.4"/>
+                    <path d="M2.5 27.5a6 6 0 0 1 6-6h17" stroke="currentColor" stroke-width="1.4"/>
+                    <path d="M8.5 8.5h10M8.5 13.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+                <span class="brand-name">{{ APP_NAME }}</span>
             </a>
         </div>
 
@@ -78,7 +129,7 @@
                     <div class="nav-section">{{ label }}</div>
                 {% else %}
                     <a href="{{ href }}" class="{{ 'active' if active == key }}">
-                        <span class="nav-icon" aria-hidden="true">{{ icon }}</span>
+                        <span class="nav-icon" aria-hidden="true">{{ nav_icon(icon) }}</span>
                         <span class="nav-text">{{ label }}</span>
                         {% if key == 'notifications' and unread_count %}
                             <span class="badge-count nav-badge">{{ unread_count }}</span>
@@ -90,13 +141,13 @@
 
         <div class="sidebar-foot">
             <a href="{{ url_for('dashboard.profile') }}" class="nav-link">
-                <span class="nav-icon" aria-hidden="true">&#9881;</span>
+                <span class="nav-icon" aria-hidden="true">{{ nav_icon('settings') }}</span>
                 <span class="nav-text">Settings</span>
             </a>
             <form method="post" action="{{ url_for('auth.logout') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="nav-link">
-                    <span class="nav-icon" aria-hidden="true">&#128682;</span>
+                    <span class="nav-icon" aria-hidden="true">{{ nav_icon('logout') }}</span>
                     <span class="nav-text">Logout</span>
                 </button>
             </form>
@@ -106,7 +157,7 @@
 
     <div class="main">
         <header class="topbar">
-            <button class="icon-btn" id="sidebar-toggle" type="button" aria-label="Toggle sidebar">&#9776;</button>
+            <button class="icon-btn" id="sidebar-toggle" type="button" aria-label="Toggle sidebar">{{ nav_icon('menu') }}</button>
             <div>
                 <div class="page-title">{{ page_title }}</div>
                 <div class="breadcrumb">{{ ROLE_LABELS.get(role, role) }} / {{ page_title }}</div>
@@ -116,7 +167,7 @@
             <div class="dropdown">
                 <button class="icon-btn" type="button" data-dropdown="notif-menu"
                         data-onopen="loadNotifDropdown" aria-label="Notifikasi">
-                    &#128276;
+                    {{ nav_icon('bell') }}
                     <span class="badge-count {{ 'hidden' if not unread_count }}" id="notif-badge">{{ unread_count }}</span>
                 </button>
                 <div class="dropdown-menu notif-menu hidden" id="notif-menu">
@@ -136,7 +187,7 @@
                         {{ current_user.full_name }}
                         <small>{{ ROLE_LABELS.get(role, role) }}</small>
                     </span>
-                    <span aria-hidden="true">&#9662;</span>
+                    <span class="user-caret" aria-hidden="true">{{ nav_icon('chevron-down') }}</span>
                 </button>
                 <div class="dropdown-menu hidden" id="profile-menu">
                     <div class="dd-head">

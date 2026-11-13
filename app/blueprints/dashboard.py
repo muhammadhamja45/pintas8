@@ -4,6 +4,7 @@ from flask import Blueprint, abort, render_template
 from .. import workflow as wf
 from ..models import BookRequest, BookType, ProductionOrder, Role, User
 from ..security import current_user, login_required, role_required
+from ..services import status_counts
 
 bp = Blueprint("dashboard", __name__)
 
@@ -48,7 +49,21 @@ def user_revision():
 @bp.get("/admin/dashboard")
 @role_required("ADMIN")
 def admin_dashboard():
-    return page("dash/admin_dashboard.html", "Dashboard", "dashboard")
+    counts = status_counts()
+    total = sum(counts.values())
+    chart_rows = [
+        {
+            "status": status,
+            "label": wf.STATUS_LABELS.get(status, status),
+            "count": counts.get(status, 0),
+            "share": round(counts.get(status, 0) * 100 / total) if total else 0,
+        }
+        for status in wf.ALL_STATUSES
+        if counts.get(status, 0)
+    ]
+    chart_rows.sort(key=lambda row: (-row["count"], row["label"]))
+    return page("dash/admin_dashboard.html", "Dashboard", "dashboard",
+                chart_rows=chart_rows, chart_total=total)
 
 
 ADMIN_QUEUES = {
