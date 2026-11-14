@@ -1,130 +1,98 @@
 {% extends "public_base.html" %}
-{% block title %}{{ APP_NAME }} - Manajemen Pengajuan dan Produksi Buku{% endblock %}
-{% block meta_description %}Digital Book DPR mengelola pengajuan buku, persetujuan, pemeriksaan editor, revisi, dan produksi dalam satu alur yang tercatat.{% endblock %}
+{% import "public/_book_card.html" as book_ui %}
+{% block title %}Digital Book DPR - Temukan dan Baca Koleksi Buku Digital{% endblock %}
+{% block meta_description %}Temukan koleksi buku digital DPR RI, jelajahi bacaan berdasarkan topik, dan baca langsung dari browser dalam satu ruang baca digital.{% endblock %}
 
 {% block head %}
 {{ super() }}
+{% if user_books %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+{% endif %}
 {% endblock %}
 
 {% block content %}
-<section class="home-hero">
-    <div class="container hero-layout">
+<section class="hero-home">
+    <div class="container hero-home-layout">
         <div class="hero-copy">
-            <p class="kicker">Sistem penerbitan internal</p>
-            <h1>Dari pengajuan ke buku cetak, <em>tanpa kehilangan jejak.</em></h1>
+            <p class="hero-eyebrow">Ruang baca digital DPR RI</p>
+            <h1 class="hero-title">Temukan Pengetahuan, <em>Mulai dari Satu Buku.</em></h1>
             <p class="hero-lead">
-                Satu sistem untuk request buku, persetujuan {{ ROLE_LABELS.ADMIN }}, pemeriksaan
-                editor, revisi, dan produksi. Setiap status, catatan, dan berkas tersimpan
-                pada satu riwayat yang dapat ditelusuri.
+                Temukan berbagai koleksi buku digital yang menghadirkan wawasan, pengetahuan,
+                dan informasi dalam satu ruang baca digital yang mudah diakses.
             </p>
             <div class="hero-actions">
-                <a class="action-primary" href="{% if current_user and current_user.role_name == 'USER' %}{{ url_for('dashboard.user_request_new') }}{% elif current_user %}{{ url_for('auth.dashboard_redirect') }}{% else %}{{ url_for('auth.login') }}{% endif %}">Ajukan buku</a>
-                <a class="action-link" href="{{ url_for('public.workflow_page') }}">Lihat alur proses <span aria-hidden="true">&rarr;</span></a>
+                <a class="action-primary" href="#katalog">Jelajahi Koleksi Buku</a>
+                <a class="action-link" href="{{ url_for('public.about') }}">Tentang Platform <span aria-hidden="true">&rarr;</span></a>
             </div>
-            <ul class="proof-list">
-                <li>
-                    <span class="proof-label">Validasi backend</span>
-                    <span class="proof-text">Tahapan tidak bisa dilompati.</span>
-                </li>
-                <li>
-                    <span class="proof-label">Revisi terpisah</span>
-                    <span class="proof-text">Catatan lama tetap tersimpan.</span>
-                </li>
-                <li>
-                    <span class="proof-label">Akses per peran</span>
-                    <span class="proof-text">Empat peran, kewenangan berbeda.</span>
-                </li>
+            <ul class="hero-notes">
+                <li><strong>{{ showcase_total }}</strong> judul</li>
+                <li><strong>{{ topics|length }}</strong> topik</li>
+                <li>Baca langsung di browser</li>
             </ul>
         </div>
 
-        <aside class="ledger" aria-label="Alur standar pengajuan buku">
-            <div class="ledger-head">
-                <div>
-                    <p class="ledger-kicker">Lembar alur</p>
-                    <p class="ledger-title">Alur standar pengajuan</p>
+        <div class="hero-visual">
+            <div class="hero-shelf">
+                {% for book in hero_books %}
+                <a class="hero-book" href="{{ book.source_url or '#' }}"
+                   {% if book.source_url %}target="_blank" rel="noopener"{% endif %}
+                   aria-label="Baca {{ book.title }}">
+                    {% if book.cover_url %}
+                    <img src="{{ book.cover_url }}" alt="{{ book.title }}" loading="{% if loop.first %}eager{% else %}lazy{% endif %}" decoding="async">
+                    {% else %}
+                    <span class="hero-book-placeholder">{{ book.title[:1] }}</span>
+                    {% endif %}
+                </a>
+                {% else %}
+                <div class="hero-shelf-empty">
+                    <span>Koleksi digital</span>
+                    <strong>Digital Book DPR</strong>
                 </div>
-                <span class="ledger-stamp" aria-hidden="true">Alur baku</span>
+                {% endfor %}
+                <a class="hero-shelf-note" href="{{ url_for('public.catalog') }}">
+                    <span class="hero-note-label">Koleksi digital</span>
+                    <strong>{{ showcase_total }}</strong>
+                    <span class="hero-note-text">judul siap dibaca</span>
+                    <span class="hero-note-link">Lihat katalog <span aria-hidden="true">&rarr;</span></span>
+                </a>
             </div>
-            {% set step_roles = [ROLE_LABELS.USER, ROLE_LABELS.ADMIN, ROLE_LABELS.EDITOR,
-                                 ROLE_LABELS.USER ~ ' / ' ~ ROLE_LABELS.EDITOR,
-                                 ROLE_LABELS.PRODUCTION, ROLE_LABELS.PRODUCTION] %}
-            <table class="ledger-table">
-                <caption class="visually-hidden">Enam tahap alur pengajuan buku beserta peran pelaksananya</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">No</th>
-                        <th scope="col">Tahap</th>
-                        <th scope="col">Pelaksana</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for num, name, desc in steps %}
-                    <tr>
-                        <td class="num">{{ num }}</td>
-                        <td class="phase">{{ name }}</td>
-                        <td class="role">{{ step_roles[loop.index0] }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <p class="ledger-foot">Setiap perpindahan status tercatat pada riwayat request.</p>
-        </aside>
+        </div>
     </div>
 </section>
 
-<section class="flow-band">
+<section class="collection-band" id="katalog">
     <div class="container">
         <div class="section-intro">
-            <p class="section-marker"><span>01</span> Alur kerja</p>
+            <p class="section-marker"><span>01</span> Koleksi pilihan</p>
             <div class="section-intro-row">
-                <h2>Enam tahap. Satu jalur yang tidak bisa dilompati.</h2>
-                <p>Perpindahan status divalidasi backend, sehingga pengajuan hanya bergerak melalui tahap yang berwenang.</p>
+                <h2>Temukan Bacaan Berikutnya</h2>
+                <p>Jelajahi koleksi buku digital dan temukan bacaan yang sesuai dengan minat Anda.</p>
             </div>
         </div>
-        <ol class="flow-grid">
-            {% for num, name, desc in steps %}
-            <li class="flow-step">
-                <span class="flow-num">{{ num }}</span>
-                <h3>{{ name }}</h3>
-                <p>{{ desc }}</p>
-            </li>
-            {% endfor %}
-        </ol>
-    </div>
-</section>
 
-<section class="section">
-    <div class="container capability-layout">
-        <div class="capability-intro">
-            <p class="section-marker"><span>02</span> Kapabilitas</p>
-            <h2>Delapan fungsi di atas satu basis data.</h2>
-            <p>Setiap fungsi membaca dan menulis ke sumber data yang sama, dari pengajuan pertama sampai buku selesai diproduksi.</p>
+        {% if featured_books %}
+        <div class="featured-grid">
+            {% for book in featured_books %}
+            {{ book_ui.book_card(book) }}
+            {% endfor %}
         </div>
-        <ol class="feature-index">
-            {% for name, desc in features %}
-            <li class="feature-item">
-                <span class="feature-num">{{ '%02d'|format(loop.index) }}</span>
-                <div>
-                    <h3>{{ name }}</h3>
-                    <p>{{ desc }}</p>
-                </div>
-            </li>
-            {% endfor %}
-        </ol>
+        <div class="section-cta">
+            <a class="action-link" href="{{ url_for('public.catalog') }}">Lihat Semua Koleksi <span aria-hidden="true">&rarr;</span></a>
+        </div>
+        {% else %}
+        <p class="empty-note">Koleksi buku digital akan tampil di sini setelah tersedia.</p>
+        {% endif %}
     </div>
 </section>
-
-{% set section = namespace(n=3) %}
 
 {% if user_books %}
-<section class="section section--shelf" id="buku-user">
+<section class="section section--shelf user-shelf" id="buku-user">
     <div class="container">
         <div class="section-intro">
-            <p class="section-marker"><span>{{ '%02d'|format(section.n) }}</span> Koleksi pengaju</p>
+            <p class="section-marker"><span>Koleksi</span> Dari pengaju</p>
             <div class="section-intro-row">
                 <h2>Buku dari {{ ROLE_LABELS.USER }}.</h2>
-                <p>Dibagikan secara public oleh pengaju dan dapat dibaca langsung sebagai flipbook.</p>
+                <p>Dibagikan secara publik oleh pengaju dan dapat dibaca langsung sebagai flipbook.</p>
             </div>
         </div>
         <ol class="book-shelf">
@@ -151,99 +119,133 @@
         </ol>
     </div>
 </section>
-{% set section.n = section.n + 1 %}
 {% endif %}
 
-{% if catalog.total %}
-<section class="catalog-band" id="katalog">
+<section class="topic-band" id="kategori">
     <div class="container">
         <div class="section-intro">
-            <p class="section-marker"><span>{{ '%02d'|format(section.n) }}</span> Katalog terbit</p>
+            <p class="section-marker"><span>02</span> Kategori</p>
             <div class="section-intro-row">
-                <h2>Arsip buku yang sudah terbit.</h2>
-                <p>Katalog e-book penerbit, ditampilkan sebagai referensi. Tersedia {{ catalog.total }} judul.</p>
+                <h2>Jelajahi Buku Berdasarkan Topik</h2>
+                <p>Pilih topik yang Anda minati untuk menemukan bacaan yang relevan.</p>
             </div>
         </div>
 
-        <div class="catalog-shelf">
-            {% for book in catalog.items %}
-            <article class="catalog-item">
-                <a class="catalog-cover" href="{{ book.source_url }}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">
-                    <img src="{{ book.cover_image_url }}" alt="" loading="lazy">
-                </a>
-                <div class="catalog-meta">
-                    <span class="catalog-category">{{ book.category }}</span>
-                    <h3><a href="{{ book.source_url }}" target="_blank" rel="noopener">{{ book.title }}</a></h3>
-                    <p>{{ book.display_description }}</p>
-                    {% if book.page_count %}<span class="catalog-pages">{{ book.page_count }} halaman</span>{% endif %}
-                </div>
-            </article>
+        {% if topics %}
+        <div class="topic-grid">
+            {% for topic in topics %}
+            <a class="topic-row" href="{{ url_for('public.catalog', category=topic.slug) }}">
+                <span class="topic-num">{{ '%02d'|format(loop.index) }}</span>
+                <span class="topic-main">
+                    <span class="topic-name">{{ topic.label }}</span>
+                    <span class="topic-desc">{{ topic.description }}</span>
+                </span>
+                <span class="topic-covers" aria-hidden="true">
+                    {% for cover in topic.covers %}
+                    <img src="{{ cover }}" alt="" loading="lazy" decoding="async">
+                    {% endfor %}
+                </span>
+                <span class="topic-count">{{ topic.count }} judul <span aria-hidden="true">&rarr;</span></span>
+            </a>
             {% endfor %}
         </div>
-
-        {% if catalog.pages > 1 %}
-        <nav class="catalog-pagination" aria-label="Halaman katalog">
-            <span class="page-status">Halaman {{ catalog.page }} dari {{ catalog.pages }}</span>
-            <div class="page-links">
-                {% if catalog.has_prev %}
-                <a href="{{ url_for('public.home', page=catalog.prev_num) }}#katalog" aria-label="Halaman sebelumnya">&larr;</a>
-                {% else %}
-                <span class="is-disabled" aria-hidden="true">&larr;</span>
-                {% endif %}
-                {% for num in catalog.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-                    {% if num %}
-                        {% if num == catalog.page %}
-                        <span class="is-current" aria-current="page">{{ num }}</span>
-                        {% else %}
-                        <a href="{{ url_for('public.home', page=num) }}#katalog">{{ num }}</a>
-                        {% endif %}
-                    {% else %}
-                    <span class="is-gap" aria-hidden="true">&hellip;</span>
-                    {% endif %}
-                {% endfor %}
-                {% if catalog.has_next %}
-                <a href="{{ url_for('public.home', page=catalog.next_num) }}#katalog" aria-label="Halaman berikutnya">&rarr;</a>
-                {% else %}
-                <span class="is-disabled" aria-hidden="true">&rarr;</span>
-                {% endif %}
-            </div>
-        </nav>
+        {% else %}
+        <p class="empty-note">Kategori akan tampil setelah koleksi buku tersedia.</p>
         {% endif %}
     </div>
 </section>
-{% set section.n = section.n + 1 %}
-{% endif %}
 
-<section class="section section--types">
+<section class="about-band" id="tentang">
+    <div class="container about-layout">
+        <div class="about-intro">
+            <p class="section-marker section-marker--on-ink"><span>03</span> Tentang platform</p>
+            <h2>Ruang Digital untuk Mengelola dan Mengakses Pengetahuan.</h2>
+            <p class="about-lead">
+                Digital Book DPR mempertemukan koleksi buku digital dengan proses penerbitan
+                yang tertata, sehingga pengetahuan lebih mudah ditemukan, dibaca, dan ditelusuri.
+            </p>
+            <a class="action-link action-link--on-ink" href="{{ url_for('public.about') }}">Selengkapnya tentang platform <span aria-hidden="true">&rarr;</span></a>
+        </div>
+        <div class="about-points">
+            <article class="about-point">
+                <h3>Koleksi yang mudah ditemukan</h3>
+                <p>Telusuri buku berdasarkan topik, jumlah halaman, dan tahun terbit dalam satu katalog.</p>
+            </article>
+            <article class="about-point">
+                <h3>Baca tanpa aplikasi tambahan</h3>
+                <p>Setiap buku dapat dibaca langsung dari browser melalui tampilan buku digital.</p>
+            </article>
+            <article class="about-point">
+                <h3>Proses penerbitan yang tertata</h3>
+                <p>Pengajuan, persetujuan, review editor, dan produksi berjalan dalam satu alur yang jelas.</p>
+            </article>
+            <article class="about-point">
+                <h3>Riwayat yang terintegrasi</h3>
+                <p>Setiap revisi dan perubahan status terdokumentasi untuk kebutuhan penelusuran.</p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="process-band" id="alur">
     <div class="container">
         <div class="section-intro">
-            <p class="section-marker"><span>{{ '%02d'|format(section.n) }}</span> Kategori pengajuan</p>
+            <p class="section-marker"><span>04</span> Alur proses</p>
             <div class="section-intro-row">
-                <h2>Jenis buku yang dilayani.</h2>
-                <p>Kategori aktif yang dikelola admin dan tersedia saat membuat pengajuan.</p>
+                <h2>Bagaimana Proses Penerbitan Berjalan?</h2>
+                <p>Setiap pengajuan melewati enam tahap yang berurutan dan tercatat.</p>
             </div>
         </div>
-        <ol class="type-index">
-            {% for type in book_types %}
-            <li class="type-item">
-                <span class="type-num">{{ '%02d'|format(loop.index) }}</span>
-                <div>
-                    <h3>{{ type.name }}</h3>
-                    <p>{{ type.description or 'Kategori pengajuan buku.' }}</p>
+
+        {% set step_roles = [ROLE_LABELS.USER, ROLE_LABELS.ADMIN, ROLE_LABELS.EDITOR,
+                             ROLE_LABELS.USER ~ ' / ' ~ ROLE_LABELS.EDITOR,
+                             ROLE_LABELS.PRODUCTION, ROLE_LABELS.PRODUCTION] %}
+        <ol class="process-rail">
+            {% for num, name, desc in steps %}
+            <li class="process-step">
+                <span class="process-dot">{{ num }}</span>
+                <div class="process-body">
+                    <h3>{{ name }}</h3>
+                    <p>{{ desc }}</p>
+                    <span class="process-role">Pelaksana: {{ step_roles[loop.index0] }}</span>
                 </div>
-            </li>
-            {% else %}
-            <li class="type-item">
-                <span class="type-num">00</span>
-                <div><p>Belum ada jenis buku aktif.</p></div>
             </li>
             {% endfor %}
         </ol>
+        <div class="section-cta">
+            <a class="action-link" href="{{ url_for('public.workflow_page') }}">Lihat alur lengkap <span aria-hidden="true">&rarr;</span></a>
+        </div>
+    </div>
+</section>
+
+<section class="features-band" id="fitur">
+    <div class="container">
+        <div class="section-intro">
+            <p class="section-marker"><span>05</span> Fitur platform</p>
+            <div class="section-intro-row">
+                <h2>Dari Pengajuan hingga Produksi, Semua Terhubung.</h2>
+                <p>Enam fungsi utama membantu tim menjaga kualitas dan kelengkapan setiap buku.</p>
+            </div>
+        </div>
+
+        <div class="feature-tile-grid">
+            {% for name, desc in features %}
+            <article class="feature-tile">
+                <span class="tile-num">{{ '%02d'|format(loop.index) }}</span>
+                <h3>{{ name }}</h3>
+                <p>{{ desc }}</p>
+            </article>
+            {% endfor %}
+        </div>
+        <div class="section-cta">
+            <a class="action-link" href="{{ url_for('public.features') }}">Lihat semua fitur <span aria-hidden="true">&rarr;</span></a>
+        </div>
     </div>
 </section>
 {% endblock %}
 
 {% block scripts %}
+{% if user_books %}
 <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
 <script src="{{ url_for('static', filename='js/flipbook.js') }}"></script>
 <script>
@@ -253,4 +255,5 @@ document.querySelectorAll("[data-open-flip]").forEach(function (button) {
     });
 });
 </script>
+{% endif %}
 {% endblock %}

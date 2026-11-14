@@ -1,0 +1,35 @@
+{% macro book_card(book) -%}
+<article class="book-card">
+    <a class="book-card-cover" href="{{ book.source_url or '#' }}"
+       {% if book.source_url %}target="_blank" rel="noopener"{% endif %}
+       tabindex="-1" aria-hidden="true">
+        {% if book.cover_url %}
+        <img src="{{ book.cover_url }}" alt="" loading="lazy" decoding="async">
+        {% else %}
+        <span class="book-card-placeholder"><span>{{ book.title[:1] }}</span></span>
+        {% endif %}
+    </a>
+    <div class="book-card-body">
+        <span class="book-card-topic">{{ book.topic }}</span>
+        <h3 class="book-card-title">
+            {% if book.source_url %}
+            <a href="{{ book.source_url }}" target="_blank" rel="noopener">{{ book.title }}</a>
+            {% else %}
+            {{ book.title }}
+            {% endif %}
+        </h3>
+        <p class="book-card-author">{{ book.author }}</p>
+        <p class="book-card-summary">{{ book.description }}</p>
+        <div class="book-card-foot">
+            <span class="book-card-meta">
+                {% if book.page_count %}{{ book.page_count }} halaman{% endif %}
+                {% if book.page_count and book.year %}<span aria-hidden="true">&middot;</span>{% endif %}
+                {% if book.year %}{{ book.year }}{% endif %}
+            </span>
+            {% if book.source_url %}
+            <a class="book-card-link" href="{{ book.source_url }}" target="_blank" rel="noopener">Baca buku <span aria-hidden="true">&rarr;</span></a>
+            {% endif %}
+        </div>
+    </div>
+</article>
+{%- endmacro %}

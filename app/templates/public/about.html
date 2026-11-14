@@ -1,15 +1,21 @@
 {% extends "public_base.html" %}
 {% block title %}Tentang - {{ APP_NAME }}{% endblock %}
+{% block meta_description %}Digital Book DPR adalah ruang baca digital yang menyatukan koleksi buku DPR RI dengan proses penerbitan yang tertata.{% endblock %}
 
 {% block content %}
 <section class="hero">
     <div class="container">
         <span class="eyebrow">Tentang</span>
-        <h1>Tentang {{ APP_NAME }}</h1>
+        <h1>Ruang Digital untuk Mengelola dan Mengakses Pengetahuan</h1>
         <p class="lead">
-            Aplikasi operasional internal untuk mengelola siklus hidup pembuatan buku,
-            dari pengajuan oleh user sampai buku selesai diproduksi.
+            Digital Book DPR menyatukan koleksi buku digital DPR RI dengan proses penerbitan
+            yang tertata. Temukan, baca, dan telusuri pengetahuan dalam satu ruang yang mudah
+            diakses, dari pengajuan hingga buku selesai diterbitkan.
         </p>
+        <div class="hero-actions">
+            <a class="action-primary" href="{{ url_for('public.catalog') }}">Jelajahi Koleksi Buku</a>
+            <a class="action-link" href="{{ url_for('public.workflow_page') }}">Lihat alur proses <span aria-hidden="true">&rarr;</span></a>
+        </div>
     </div>
 </section>
 
@@ -17,24 +23,24 @@
     <div class="container">
         <div class="feature-grid">
             <article class="feature-card">
-                <h3>Satu alur, empat peran</h3>
-                <p>{{ ROLE_LABELS.USER }} mengajukan, {{ ROLE_LABELS.ADMIN }} menyetujui, Editor memeriksa, dan tim Produksi
-                   mengerjakan pencetakan. Setiap peran memiliki hak akses sendiri.</p>
+                <h3>Koleksi yang mudah diakses</h3>
+                <p>Seluruh buku digital tersedia dalam satu katalog yang dapat ditelusuri
+                   berdasarkan topik, jumlah halaman, dan tahun terbit.</p>
             </article>
             <article class="feature-card">
-                <h3>Status yang terkontrol</h3>
-                <p>Perpindahan status divalidasi backend, sehingga tahapan tidak dapat
-                   dilompati atau diubah oleh peran yang tidak berwenang.</p>
+                <h3>Pengelolaan proses penerbitan</h3>
+                <p>Pengajuan, persetujuan, review editor, dan produksi berjalan dalam satu
+                   alur yang jelas dan tidak dapat dilompati.</p>
             </article>
             <article class="feature-card">
-                <h3>Revisi tercatat</h3>
-                <p>Setiap catatan editor dan tanggapan user disimpan sebagai riwayat
-                   revisi terpisah, bukan menimpa data lama.</p>
+                <h3>Revisi terdokumentasi</h3>
+                <p>Setiap catatan editor dan tanggapan pengaju disimpan sebagai riwayat
+                   terpisah, bukan menimpa data lama.</p>
             </article>
             <article class="feature-card">
-                <h3>Jejak audit</h3>
-                <p>Login, perubahan request, upload file, approval, hingga penyelesaian
-                   produksi dicatat pada audit log.</p>
+                <h3>Riwayat dan jejak audit</h3>
+                <p>Perubahan status, unggahan berkas, dan aktivitas penting tercatat untuk
+                   kebutuhan penelusuran dan akuntabilitas.</p>
             </article>
         </div>
     </div>

@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from flask import Flask, jsonify, render_template
 from werkzeug.exceptions import HTTPException, default_exceptions
@@ -47,6 +48,7 @@ def register_jinja(app):
         user = current_user()
         return {
             "APP_NAME": app.config["APP_NAME"],
+            "CURRENT_YEAR": datetime.now().year,
             "current_user": user,
             "csrf_token": csrf_token,
             "STATUS_LABELS": wf.STATUS_LABELS,

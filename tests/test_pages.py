@@ -3,7 +3,7 @@ import pytest
 
 from conftest import client_for
 
-PUBLIC = ["/", "/about", "/workflow", "/features", "/login"]
+PUBLIC = ["/", "/catalog", "/about", "/workflow", "/features", "/login"]
 
 PAGES = {
     "user@example.com": ["/user/dashboard", "/user/requests", "/user/requests/new",

@@ -1,0 +1,98 @@
+{% extends "public_base.html" %}
+{% import "public/_book_card.html" as book_ui %}
+{% block title %}Katalog Buku - {{ APP_NAME }}{% endblock %}
+{% block meta_description %}Jelajahi seluruh koleksi buku digital DPR RI. Filter berdasarkan topik dan temukan bacaan yang sesuai.{% endblock %}
+
+{% block content %}
+<section class="catalog-hero">
+    <div class="container">
+        <div class="catalog-hero-layout">
+            <div>
+                <p class="section-marker"><span>Katalog</span> Koleksi buku</p>
+                <h1>Katalog Buku Digital DPR</h1>
+                <p class="catalog-lead">
+                    Telusuri seluruh koleksi buku digital DPR RI. Gunakan filter topik untuk
+                    menemukan bacaan yang paling relevan dengan minat Anda.
+                </p>
+            </div>
+            <dl class="catalog-stats">
+                <div>
+                    <dt>Judul</dt>
+                    <dd>{{ showcase_total }}</dd>
+                </div>
+                <div>
+                    <dt>Topik</dt>
+                    <dd>{{ topics|length }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+</section>
+
+<section class="catalog-page">
+    <div class="container">
+        <div class="catalog-toolbar">
+            <nav class="filter-chips" aria-label="Filter kategori buku">
+                <a class="filter-chip {{ 'is-active' if not active_category }}"
+                   href="{{ url_for('public.catalog') }}"
+                   {% if not active_category %}aria-current="page"{% endif %}>
+                    Semua <span>{{ showcase_total }}</span>
+                </a>
+                {% for topic in topics %}
+                <a class="filter-chip {{ 'is-active' if active_category == topic.slug }}"
+                   href="{{ url_for('public.catalog', category=topic.slug) }}"
+                   {% if active_category == topic.slug %}aria-current="page"{% endif %}>
+                    {{ topic.label }} <span>{{ topic.count }}</span>
+                </a>
+                {% endfor %}
+            </nav>
+            <p class="catalog-result">
+                Menampilkan {{ books|length }} dari {{ catalog.total }} judul{% if active_topic %} dalam {{ active_topic.label }}{% endif %}
+            </p>
+        </div>
+
+        {% if books %}
+        <div class="catalog-grid">
+            {% for book in books %}
+            {{ book_ui.book_card(book) }}
+            {% endfor %}
+        </div>
+
+        {% if catalog.pages > 1 %}
+        <nav class="catalog-pagination" aria-label="Halaman katalog">
+            <span class="page-status">Halaman {{ catalog.page }} dari {{ catalog.pages }}</span>
+            <div class="page-links">
+                {% if catalog.has_prev %}
+                <a href="{{ url_for('public.catalog', category=active_category or none, page=catalog.prev_num) }}" aria-label="Halaman sebelumnya">&larr;</a>
+                {% else %}
+                <span class="is-disabled" aria-hidden="true">&larr;</span>
+                {% endif %}
+                {% for num in catalog.page_numbers %}
+                    {% if num %}
+                        {% if num == catalog.page %}
+                        <span class="is-current" aria-current="page">{{ num }}</span>
+                        {% else %}
+                        <a href="{{ url_for('public.catalog', category=active_category or none, page=num) }}">{{ num }}</a>
+                        {% endif %}
+                    {% else %}
+                    <span class="is-gap" aria-hidden="true">&hellip;</span>
+                    {% endif %}
+                {% endfor %}
+                {% if catalog.has_next %}
+                <a href="{{ url_for('public.catalog', category=active_category or none, page=catalog.next_num) }}" aria-label="Halaman berikutnya">&rarr;</a>
+                {% else %}
+                <span class="is-disabled" aria-hidden="true">&rarr;</span>
+                {% endif %}
+            </div>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="catalog-empty">
+            <h2>Belum ada buku di katalog</h2>
+            <p>Koleksi buku digital akan tampil di sini setelah tersedia.</p>
+            <a class="action-primary" href="{{ url_for('public.home') }}">Kembali ke beranda</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

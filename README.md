@@ -175,10 +175,11 @@ dan requst tersebut otomatis muncul di seksi **"Buku dari Sekjen/Dewan"** pada
 halaman Home ([public/home.html](app/templates/public/home.html)), sebagai kartu
 yang langsung membuka Flipbook saat diklik.
 
-Halaman Home juga punya seksi terpisah **"Katalog Buku Terbit"**, yang bersumber
-dari tabel `ebook_showcase` (katalog e-book penerbit yang sudah ada, hanya
-ditampilkan/dibaca, bukan hasil dari alur request) — kartu di seksi ini mengarah
-keluar ke `source_url` masing-masing, bukan ke Flipbook internal.
+Halaman **Katalog Buku** (`/catalog`) menampilkan seluruh koleksi dari tabel
+`ebook_showcase` (katalog e-book penerbit yang sudah ada, hanya
+ditampilkan/dibaca, bukan hasil dari alur request), lengkap dengan filter topik
+dan pagination. Halaman Home menampilkan pilihan buku dari koleksi yang sama,
+dan setiap kartu mengarah keluar ke `source_url` masing-masing.
 
 ---
 
@@ -296,8 +297,9 @@ python run.py
 
 | Halaman | URL |
 |---------|-----|
-| Home (publik) | http://127.0.0.1:5000/ |
-| Login | http://127.0.0.1:5000/login |
+| Home (publik) | http://127.0.0.1:5001/ |
+| Katalog Buku | http://127.0.0.1:5001/catalog |
+| Login | http://127.0.0.1:5001/login |
 
 ---
 
@@ -469,7 +471,8 @@ GET    /api/book-types
 ### Public (tanpa login)
 
 ```http
-GET    /                          halaman Home (public books + ebook showcase)
+GET    /                          halaman Home (featured books + topik)
+GET    /catalog                   katalog lengkap (filter topik + pagination)
 GET    /about
 GET    /workflow
 GET    /features

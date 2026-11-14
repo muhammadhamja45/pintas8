@@ -2,7 +2,7 @@
 
 {% block head %}
 {{ super() }}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css', v='2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css', v='3') }}">
 {% endblock %}
 
 {% block body %}
@@ -27,11 +27,11 @@
 
         <nav class="site-nav" id="site-nav" aria-label="Navigasi utama">
             <ul class="site-nav-links">
-                <li><a href="{{ url_for('public.home') }}" class="{{ 'is-active' if page == 'home' }}">Beranda</a></li>
-                <li><a href="{{ url_for('public.about') }}" class="{{ 'is-active' if page == 'about' }}">Tentang</a></li>
-                <li><a href="{{ url_for('public.workflow_page') }}" class="{{ 'is-active' if page == 'workflow' }}">Alur proses</a></li>
-                <li><a href="{{ url_for('public.features') }}" class="{{ 'is-active' if page == 'features' }}">Fitur</a></li>
-                <li><a href="{{ url_for('public.home') }}#katalog">Katalog</a></li>
+                <li><a href="{{ url_for('public.home') }}" class="{{ 'is-active' if page == 'home' }}" {% if page == 'home' %}aria-current="page"{% endif %}>Beranda</a></li>
+                <li><a href="{{ url_for('public.about') }}" class="{{ 'is-active' if page == 'about' }}" {% if page == 'about' %}aria-current="page"{% endif %}>Tentang</a></li>
+                <li><a href="{{ url_for('public.catalog') }}" class="{{ 'is-active' if page == 'catalog' }}" {% if page == 'catalog' %}aria-current="page"{% endif %}>Katalog Buku</a></li>
+                <li><a href="{{ url_for('public.workflow_page') }}" class="{{ 'is-active' if page == 'workflow' }}" {% if page == 'workflow' %}aria-current="page"{% endif %}>Alur Proses</a></li>
+                <li><a href="{{ url_for('public.features') }}" class="{{ 'is-active' if page == 'features' }}" {% if page == 'features' %}aria-current="page"{% endif %}>Fitur</a></li>
             </ul>
             <div class="site-nav-actions">
                 {% if current_user %}
@@ -65,33 +65,34 @@
                         <span class="wordmark-sub">DPR</span>
                     </span>
                 </a>
-                <p>Sistem manajemen pengajuan, persetujuan, pemeriksaan editor, revisi, dan produksi buku dalam satu alur yang tercatat.</p>
+                <p>Ruang baca digital dan pengelolaan penerbitan buku DPR RI. Temukan koleksi, baca langsung dari browser, dan ikuti proses penerbitan dalam satu platform.</p>
             </div>
             <div class="footer-cols">
                 <div>
-                    <h2>Halaman</h2>
+                    <h2>Jelajahi</h2>
                     <ul>
-                        <li><a href="{{ url_for('public.home') }}">Beranda</a></li>
+                        <li><a href="{{ url_for('public.catalog') }}">Katalog buku</a></li>
+                        <li><a href="{{ url_for('public.home') }}#kategori">Kategori</a></li>
                         <li><a href="{{ url_for('public.about') }}">Tentang</a></li>
-                        <li><a href="{{ url_for('public.workflow_page') }}">Alur proses</a></li>
-                        <li><a href="{{ url_for('public.features') }}">Fitur</a></li>
-                        <li><a href="{{ url_for('public.home') }}#katalog">Katalog buku</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h2>Peran</h2>
+                    <h2>Platform</h2>
                     <ul>
-                        <li>{{ ROLE_LABELS.USER }}</li>
-                        <li>{{ ROLE_LABELS.ADMIN }}</li>
-                        <li>{{ ROLE_LABELS.EDITOR }}</li>
-                        <li>{{ ROLE_LABELS.PRODUCTION }}</li>
+                        <li><a href="{{ url_for('public.workflow_page') }}">Alur proses</a></li>
+                        <li><a href="{{ url_for('public.features') }}">Fitur</a></li>
+                        {% if current_user %}
+                        <li><a href="{{ url_for('auth.dashboard_redirect') }}">Dashboard</a></li>
+                        {% else %}
+                        <li><a href="{{ url_for('auth.login') }}">Masuk</a></li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
         </div>
         <div class="footer-bottom">
-            <span>{{ APP_NAME }}</span>
-            <span>Sistem penerbitan internal</span>
+            <span>&copy; {{ CURRENT_YEAR }} {{ APP_NAME }}. Seluruh hak cipta dilindungi.</span>
+            <span>Sekretariat Jenderal DPR RI</span>
         </div>
     </div>
 </footer>
